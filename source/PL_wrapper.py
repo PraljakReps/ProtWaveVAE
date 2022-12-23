@@ -157,7 +157,7 @@ class Lit_SSInfoVAE(pl.LightningModule):
         
 
         # return onehot encoded features, regression predictions, and accepted flow indexes
-        x_onehot, y_pheno_R, accept_flow_idxes, y_pheno_C = batch
+        x_onehot, y_pheno_R, y_pheno_C, accept_flow_idxes = batch
      
         # change nan to values to 0 (note: we will not account for these values in loss calculations).        
         y_pheno_C = torch.nan_to_num(y_pheno_C, nan = 0).to(torch.float32)
@@ -296,7 +296,7 @@ class Lit_SSInfoVAE(pl.LightningModule):
         ) -> dict:
         
         # get data tensors from dataloader for current batch
-        x_onehot, y_pheno_R, accept_flow_idxes, y_pheno_C = batch
+        x_onehot, y_pheno_R, y_pheno_C, accept_flow_idxes = batch
      
         # change nan values to 0 (note: we will not account for these values in loss calculations)
         y_pheno_C = torch.nan_to_num(y_pheno_C, nan = 0).to(torch.float32) 
