@@ -10,7 +10,7 @@ from torchvision.utils import save_image
 from torch.autograd import Variable
 from torch.nn import functional as F
 
-
+from tqdm import tqdm
 
 """
 @summary: here, we are only running a simple MMD-VAE with Semi-supervised learning, however, the components (i.e., encoder+decoder) are 
@@ -550,6 +550,124 @@ class SS_InfoVAE(nn.Module):
                 loss_mmd,
                 loss_pheno
         )
+    @torch.no_grad()
+    def aa_sample(
+            self,
+            X: torch.FloatTensor,
+            option: str='categorical'
+        ) -> torch.FloatTensor:
+        onehot_transformer = torch.eye(21)
 
+        if option=='categorical': # sample from a categorical distribution
+            cate = torch.distributions.Categorical(X)
+            X = cate.sample()
+        
+        else: # sample from an argmax distribution
+            X = torch.argmax(X, dim = -1)
+
+        return onehot_transformer[X]
+
+    @torch.no_grad()
+    def sample(
+            self,
+            args: any,
+            X_context: torch.FloatTensor,
+            z: torch.FloatTensor,
+            option: str='categorical',
+        ) -> torch.FloatTensor:
+
+        # eval model (important, especially with BatchNorms)
+        self.eval()
+
+        # misc helper variables/objects
+        protein_len = X_context.shape[1] # length of the maximum sequence
+        n = X_context.shape[0] # number of sequences to generate
+
+	# init. placeholder tensors
+        X_temp = torch.zeros_like(X_context).to(args.DEVICE) # [B, L, 21]
+        X_context = torch.zeros_like(X_context).unsqueeze(1).repeat(1,
+                                                               protein_len+1,
+                                                               1,
+                                                               1
+        ).to(args.DEVICE) # [B, L+1, L, 21]
+
+        # upscale latent code
+        z_context = self.cond_mapper(z) # linear transformation: [B,6] -> [B, L, 21]
+        # generate first index (only latent code conditioning)
+        X_gen_logits = self.generator(
+                                    X_context[:,0,:,:].permute(0,2,1),
+                                    z_context
+        ).permute(0, 2, 1) # [B, L, 21]
+        # insert amino acid label in the first position
+        X_temp[:,0,:] = self.aa_sample(X_gen_logits.softmax(dim=-1), option=option)[:,0]
+        # first index of the context is the probability prediction with only latent conditional
+        X_context[:,0,:,:] = X_gen_logits.softmax(dim = -1)
+
+        for ii in tqdm(range(1, protein_len)):
+
+            # make logit predictions for the remaining positions
+            X_gen_logits = self.generator(
+                                    X_temp[:,:,:].permute(0,2,1),
+                                    z_context
+            ).permute(0,2,1)
+            # insert amino acid at the next position
+            X_temp[:,ii,:] = self.aa_sample(X_gen_logits.softmax(dim=-1))[:,ii]
+            # update the next index of the conditional tensor
+            X_context[:,ii,:,:] = X_gen_logits.softmax(dim=-1)
+            # update the
+            X_context[:,ii,:ii,:] = X_temp[:,:ii,:]
+
+        # last index is the final latent-based AR prediction
+        X_context[:,-1,:,:] = X_temp
+        return X_context
+
+
+    @torch.no_grad()
+    def diversify(
+        self,
+        args: any,
+        X_context: torch.FloatTensor,
+        z: torch.FloatTensor,
+        L: int=1,
+        option: str='categorical'
+        ) -> torch.FloatTensor:
+       
+        
+        # eval mode (important, especially with BatchNorms)
+        self.eval()
+        
+        # misc helper variables/objects
+        protein_len = X_context.shape[1] # length of the maximum sequence
+        n = X_context.shape[0] # number of sequences to generate
+        
+	# init. placeholder tensors
+        X_temp = torch.zeros_like(X_context).to(args.DEVICE) # [B, L, 21]
+        X_context = torch.zeros_like(X_context).unsqueeze(1).repeat(1,
+                                                                   protein_len+1,
+                                                                   1,
+                                                                   1
+        ).to(args.DEVICE) # [B, L+1, L, 21]
+            
+        # upscale latent code
+        z_context = self.cond_mapper(z) # linear transformation: [B,6] -> [B, L, 21]
+       
+        for ii in tqdm(range(L, protein_len)):
+            
+            # make logit predictions for the remaining positions 
+            X_gen_logits = self.generator(
+                                    X_temp[:,:,:].permute(0,2,1),
+                                    z_context
+            ).permute(0,2,1)
+            # insert amino acid at the next position
+            X_temp[:,ii,:] = self.aa_sample(X_gen_logits.softmax(dim=-1))[:,ii]
+            # update the next index of the conditional tensor
+            X_context[:,ii,:,:] = X_gen_logits.softmax(dim=-1)
+            # update the 
+            X_context[:,ii,:ii,:] = X_temp[:,:ii,:]
+         
+        # last index is the final latent-based AR prediction
+        X_context[:,-1,:,:] = X_temp
+        
+        return X_context
 
 
