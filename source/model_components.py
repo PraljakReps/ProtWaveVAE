@@ -524,7 +524,8 @@ class SS_InfoVAE(nn.Module):
         nll = nn.CrossEntropyLoss(reduction = 'none') # reconstruction loss
         x_nums = torch.argmax(x, dim = -1).long() # convert ground truth from one hot to num. rep.
         loss_nll = nll(xr.permute(0, 2, 1), x_nums) # nll for reconstruction
-        loss_nll = torch.sum(loss_nll, dim = -1) # sum nll along protein sequence
+        #loss_nll = torch.sum(loss_nll, dim = -1) # sum nll along protein sequence
+        loss_nll = torch.mean(loss_nll, dim = -1) # average nll along protein sequence
         loss_nll = torch.mean(loss_nll) # average over the batch
         # DISCRIMINATION loss:
         
