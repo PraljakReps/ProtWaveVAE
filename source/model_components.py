@@ -632,7 +632,9 @@ class SS_InfoVAE(nn.Module):
         option: str='categorical'
         ) -> torch.FloatTensor:
        
-        
+        # copy context sequence to track the conditioned amino acids
+        X_template = X_context.clone()
+
         # eval mode (important, especially with BatchNorms)
         self.eval()
         
@@ -647,7 +649,17 @@ class SS_InfoVAE(nn.Module):
                                                                    1,
                                                                    1
         ).to(args.DEVICE) # [B, L+1, L, 21]
-            
+        
+        # insert the conditioned amino acids
+        X_temp[:,:L,:] = X_template[:,:L,:]
+        X_context[:,:,:L,:] = X_template.unsqueeze(1).repeat(
+                                                        1,
+                                                        protein_len+1,
+                                                        1,
+                                                        1
+        )[:,:,:L,:]
+
+
         # upscale latent code
         z_context = self.cond_mapper(z) # linear transformation: [B,6] -> [B, L, 21]
        

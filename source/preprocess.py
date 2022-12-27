@@ -67,7 +67,12 @@ def prepare_SH3_data(
         df: pd.Series,
         max_seq_len: int,
         unaligned: int = 0
-    ) -> (torch.FloatTensor, torch.FloatTensor, torch.FloatTensor, torch.FloatTensor):
+    ) -> (
+            torch.FloatTensor,
+            torch.FloatTensor,
+            torch.FloatTensor,
+            torch.FloatTensor
+    ):
     """
     function description: preparing sh3 data.
     """
