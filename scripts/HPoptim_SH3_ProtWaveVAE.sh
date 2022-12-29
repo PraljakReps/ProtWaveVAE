@@ -27,6 +27,7 @@ export C_in=21
 export C_out='256'
 export alpha=0.1 # might not be necessary (Only for leaky relu)
 export enc_kernel='3'
+export num_fc='1'
 
 # top model (discriminative decoder) hyperparameters
 export disc_num_layers='2'
@@ -66,6 +67,7 @@ python ../HPoptim_SH3_ProtWaveVAE.py \
 		--C_in ${C_in} \
 		--C_out ${C_out} \
 		--alpha ${enc_kernel} \
+		--num_fc ${num_fc} \
 		--disc_num_layers ${disc_num_layers} \
 		--hidden_width ${hidden_width} \
 		--p ${p} \

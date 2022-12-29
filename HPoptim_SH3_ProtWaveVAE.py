@@ -44,6 +44,7 @@ class Objective(object):
             valid_dataloader,
             z_dim,
             encoder_rates,
+            num_fc,
             C_out,
             enc_kernel,
             disc_num_layers,
@@ -72,6 +73,7 @@ class Objective(object):
         self.encoder_rates = encoder_rates
         self.C_out = C_out
         self.enc_kernel = enc_kernel
+        self.num_fc = num_fc
 
         # discriminative top model hyperparameters
         self.disc_num_layers = disc_num_layers
@@ -103,6 +105,7 @@ class Objective(object):
         encoder_rates = trial.suggest_categorical('encoder_rates', self.encoder_rates)
         C_out = trial.suggest_categorical('C_out', self.C_out)
         enc_kernel = trial.suggest_categorical('enc_kernel', self.enc_kernel)
+        num_fc = trial.suggest_categorical('num_fc', self.num_fc)
 
         # discriminative top model hyperparameters
         disc_num_layers = trial.suggest_categorical('disc_num_layers', self.disc_num_layers)
@@ -131,7 +134,7 @@ class Objective(object):
                                   C_out=C_out,
                                   alpha=args.alpha,
                                   kernel=enc_kernel,
-                                  pad_option="valid"
+                                  num_fc=num_fc
         )
     
         
@@ -342,7 +345,8 @@ def CV_train(
     encoder_rates = [int(item) for item in args.encoder_rates.split(',')] # depth of dilated encoder
     C_out = [int(item) for item in args.C_out.split(',')] # conv no. filters
     enc_kernel = [int(item) for item in args.enc_kernel.split(',')] # size of the encoder kernel
-    
+    num_fc = [int(item) for item in args.num_fc.split(',')] # number of fully-connected layers
+
     # discriminative top model variables
     disc_num_layers = [int(item) for item in args.disc_num_layers.split(',')] # number of disc layers
     hidden_width = [int(item) for item in args.hidden_width.split(',')] # size of the MLP
@@ -440,6 +444,7 @@ def CV_train(
                     encoder_rates=encoder_rates,
                     C_out=C_out,
                     enc_kernel=enc_kernel,
+                    num_fc=num_fc,
                     disc_num_layers=disc_num_layers,
                     hidden_width=hidden_width,
                     p=p,
@@ -493,6 +498,7 @@ def get_args() -> any:
     parser.add_argument('--C_out', default='256', type=str, help='output feature depth')
     parser.add_argument('--alpha', default=0.1, type=float, help='leaky Relu hyperparameter (optional)')
     parser.add_argument('--enc_kernel', default='3', type=str, help='kernel filter size')
+    parser.add_argument('--num_fc', default='1', type=str, help='number of fully connected layers before latent embedding')
 
     # top model (discriminative decoder) hyperparameters
     parser.add_argument('--disc_num_layers', default='2', type=str, help='depth of the discrim. top model')
