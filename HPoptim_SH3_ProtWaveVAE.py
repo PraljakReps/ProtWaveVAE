@@ -19,6 +19,7 @@ import source.model_components as model_comps
 import source.wavenet_decoder as wavenet
 import source.PL_wrapper as PL_wrapper
 
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -124,7 +125,7 @@ class Objective(object):
         lambda_weight = trial.suggest_categorical('lambda_weight', self.lambda_weight)
         gamma_weight = trial.suggest_categorical('gamma_weight', self.gamma_weight)
         
-        
+        print(enc_kernel)       
         # define inference model:
         encoder = model_comps.GatedCNN_encoder(
                                   protein_len=self.max_seq_len,
@@ -370,6 +371,7 @@ def CV_train(
             'encoder_rates':encoder_rates,
             'C_out':C_out,
             'enc_kernel':enc_kernel,
+            'num_fc':num_fc,
             'disc_num_layers':disc_num_layers,
             'hidden_width':hidden_width,
             'p':p,
@@ -384,8 +386,13 @@ def CV_train(
     }
 
 
-    from sklearn.model_selection import KFold
-    kf = KFold(n_splits = args.K)
+    from sklearn.model_selection import KFold, StratifiedShuffleSplit
+    
+    
+    
+    #kf = KFold(n_splits = args.K)
+    sss = StratifiedShuffleSplit(n_splits = args.K)
+
 
 
     df = pd.read_csv(args.dataset_path)
@@ -398,7 +405,7 @@ def CV_train(
     )
 
 
-    for ii, (train_index, test_index) in enumerate(kf.split(X_OH)):
+    for ii, (train_index, test_index) in enumerate(sss.split(X_OH, y_C)):
 
         # split data into train/test
         X_train, X_test = X_OH[train_index], X_OH[test_index]
@@ -479,6 +486,7 @@ def get_args() -> any:
     # path variables
     parser.add_argument('--dataset_path', default = './data/ACS_SynBio_SH3_dataset.csv', help = 'flag: choose output path')
     parser.add_argument('--output_results_path', default = './outputs/SH3_task/hp_optim/ProtWaveVAE', help = 'flag: choose output path', type = str)
+    parser.add_argument('--output_folder', default = './outputs/SH3_task/hp_optim', help = 'flag: choose output folder', type = str)
   
     # model training variables
     parser.add_argument('--SEED', default = 42, help = 'flag: random seed', type = int)
@@ -555,6 +563,13 @@ if __name__ == '__main__':
     # get argument variables:
     # ---------------
     args = get_args()
+    # create folder
+    os.makedirs(args.output_folder, exist_ok=True)
+    
+    # save arugments
+    ckpts = (args)
+    output_path  = args.output_results_path + f'_{args.search_variable}.args'
+    torch.save(ckpts, output_path)
 
     # activate GPU:
     # ---------------
@@ -562,7 +577,6 @@ if __name__ == '__main__':
 
     # set seed for reproducibility
     set_SEED(args)
-
 
     CV_train(
             args=args,
