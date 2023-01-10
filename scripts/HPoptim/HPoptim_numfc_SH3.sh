@@ -7,27 +7,28 @@ export PYTHONPATH=${PYTHONPATH}:${DIR}
 
 
 # path variables
-export dataset_path='.././data/ACS_SynBio_SH3_dataset.csv'
-export output_results_path='.././outputs/SH3_task/hp_optim/ProtWaveVAE_trainSH3_'
+export dataset_path='../.././data/ACS_SynBio_SH3_dataset.csv'
+export output_results_path='../.././outputs/SH3_task/hp_optim/ProtWaveVAE_trainSH3_'
+export output_folder='../.././outputs/SH3_task/hp_optim'
 
 # model training variables
 export SEED=42
-export batch_size=512
-export epochs=1
+export batch_size=1024
+export epochs=200
 export lr=1e-4
 export DEVICE='cuda'
 
 # general architecture variables
-export z_dim='1,2,3,4,5'
+export z_dim='6'
 export num_classes=1
 
 # encoder hyperparameters
-export encoder_rates='5'
+export encoder_rates='0'
 export C_in=21
-export C_out='256'
+export C_out='512'
 export alpha=0.1 # might not be necessary (Only for leaky relu)
 export enc_kernel='3'
-export num_fc='1'
+export num_fc='0,1,2,3,4,5,6'
 
 # top model (discriminative decoder) hyperparameters
 export disc_num_layers='2'
@@ -47,14 +48,15 @@ export MI_weight='0.95'
 export lambda_weight='2.0'
 export gamma_weight='1.0'
 
-export search_variable='z_dim'
-export n_trials=5
-export K=5
+export search_variable='num_fc'
+export n_trials=7
+export K=1
 
 
-python ../HPoptim_SH3_ProtWaveVAE.py \
+python ../../HPoptim_SH3_ProtWaveVAE.py \
 		--dataset_path ${dataset_path} \
 		--output_results_path ${output_results_path} \
+		--output_folder ${output_folder} \
 		--SEED ${SEED} \
 		--batch_size ${batch_size} \
                 --epochs ${epochs} \
@@ -66,7 +68,8 @@ python ../HPoptim_SH3_ProtWaveVAE.py \
 		--encoder_rates ${encoder_rates} \
 		--C_in ${C_in} \
 		--C_out ${C_out} \
-		--alpha ${enc_kernel} \
+	 	--alpha ${alpha} \
+		--enc_kernel ${enc_kernel} \
 		--num_fc ${num_fc} \
 		--disc_num_layers ${disc_num_layers} \
 		--hidden_width ${hidden_width} \
