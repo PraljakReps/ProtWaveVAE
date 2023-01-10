@@ -1,0 +1,2 @@
+header,DomainName,Protein,Sequences_unaligned,orthologous_group,PhyGroup,Species,RE_norm,min_leven,perc_min_leven[dissimilarity]
+nat_7785,,"Candida dubliniensis CD36 actin-binding protein, putative (CD36_42810), partial mRNA domain [1]",KKQSVTATAEYDYEKDEDNEIGFSEGDLIIDIEFVDDDWWQGKHAETGEVGLFPATYVSLNEKSAD,KOG3655,Ascomycota,Candida dubliniensis CD36,0.5696449044129819,3.0,0.0454545454545454
