@@ -20,6 +20,7 @@ import source.wavenet_decoder as wavenet
 import source.model_components as model_comps
 import source.PL_wrapper as PL_wrapper
 
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -43,9 +44,11 @@ def get_args() -> any:
     
     # path varibles
     parser.add_argument('--dataset_path', default='./data/ACS_SynBio_SH3_dataset.csv')
-    parser.add_argument('--output_results_path', default='./outputs/SH3_task/ProtWaveVAE_SSTrainingHist.csv')
-    parser.add_argument('--output_model_path', default='./outputs/SH3_task/ProtWaveVAE_SSTrainingHist.pth')
-    
+    parser.add_argument('--output_results_path', default='./outputs/SH3_task/final_model/ProtWaveVAE_SSTrainingHist.csv')
+    parser.add_argument('--output_model_path', default='./outputs/SH3_task/final_model/ProtWaveVAE_SSTrainingHist.pth')
+    parser.add_argument('--output_folder_path', default='./outputs/SH3_task/final_model/ProtWaveVAE_SSTrainingHist.pth')
+
+
     # model training variables
     parser.add_argument('--SEED', default=42, type=int, help='Random seed')
     parser.add_argument('--batch_size', default=512, type=int, help='Size of the batch.')
@@ -265,7 +268,6 @@ def train_model(
          callbacks=None,
          max_epochs=args.epochs,
          gpus = 1 if torch.cuda.is_available() else None,
-         progress_bar_refresh_rate=0,
          )      
         
         if args.dataset_split == 1:
@@ -273,7 +275,7 @@ def train_model(
             trainer.fit(PL_model, train_dataloaders=train_dataloader, val_dataloaders=valid_dataloader)  
         else:
             print('\nTrain on the whole data\n')
-            trainer.fit(PL_model, train_dataloaders=train_dataloader, val_dataloaders=train_dataloader)
+            trainer.fit(PL_model, train_dataloader)
 
         train_L = trainer.callback_metrics['L_train_epoch'].item()
         train_NLL = trainer.callback_metrics['L_nll_train_epoch'].item()
@@ -284,18 +286,9 @@ def train_model(
         train_recall_epoch = trainer.callback_metrics['Train_recall_epoch'].item()
         train_f1_epoch = trainer.callback_metrics['Train_f1_epoch'].item()
      
-        val_L = trainer.callback_metrics['L_valid_epoch'].item()
-        val_NLL = trainer.callback_metrics['L_nll_valid_epoch'].item()
-        val_kld = trainer.callback_metrics['L_kld_valid_epoch'].item()
-        val_mmd = trainer.callback_metrics['L_mmd_valid_epoch'].item()
-        val_pheno = trainer.callback_metrics['L_pheno_valid_epoch'].item()
-        val_precision_epoch = trainer.callback_metrics['val_precision_epoch'].item()
-        val_recall_epoch = trainer.callback_metrics['val_recall_epoch'].item()
-        val_f1_epoch = trainer.callback_metrics['val_f1_epoch'].item()
 
         final_epoch_results = [
             train_L,
-            val_L,
             train_NLL,
             train_kld,
             train_mmd,
@@ -303,13 +296,6 @@ def train_model(
             train_precision_epoch,
             train_recall_epoch,
             train_f1_epoch,
-            val_NLL,
-            val_kld,
-            val_mmd,
-            val_pheno,
-            val_precision_epoch,
-            val_recall_epoch,
-            val_f1_epoch
         ]
         
         all_epochs_losses = {
@@ -321,34 +307,17 @@ def train_model(
             'train_precision': list(),
             'train_recall': list(),
             'train_f1': list(),
-            'valid_L': list(),
-            'valid_nll': list(),
-            'valid_kld': list(),
-            'valid_mmd': list(),
-            'valid_pheno': list(),
-            'valid_precision': list(),
-            'valid_recall': list(),
-            'valid_f1': list()
         }
             
         # allocate losses from all of the epochs:
-        all_epochs_losses['train_L'] = PL_model.L_train_list + [float('nan')]
-        all_epochs_losses['train_nll'] = PL_model.L_train_nll_list + [float('nan')]
-        all_epochs_losses['train_kld'] = PL_model.L_train_kld_list + [float('nan')]
-        all_epochs_losses['train_mmd'] = PL_model.L_train_mmd_list + [float('nan')]
-        all_epochs_losses['train_pheno'] = PL_model.L_train_pheno_list + [float('nan')]
-        all_epochs_losses['train_precision'] = PL_model.train_precision_list + [float('nan')]
-        all_epochs_losses['train_recall'] = PL_model.train_recall_list + [float('nan')]
-        all_epochs_losses['train_f1'] = PL_model.train_f1_list + [float('nan')]
-
-        all_epochs_losses['valid_L'] = PL_model.L_val_list
-        all_epochs_losses['valid_nll'] = PL_model.L_val_nll_list
-        all_epochs_losses['valid_kld'] = PL_model.L_val_kld_list
-        all_epochs_losses['valid_mmd'] = PL_model.L_val_mmd_list
-        all_epochs_losses['valid_pheno'] = PL_model.L_val_pheno_list
-        all_epochs_losses['valid_precision'] = PL_model.val_precision_list
-        all_epochs_losses['valid_recall'] = PL_model.val_recall_list
-        all_epochs_losses['valid_f1'] = PL_model.val_f1_list
+        all_epochs_losses['train_L'] = PL_model.L_train_list
+        all_epochs_losses['train_nll'] = PL_model.L_train_nll_list
+        all_epochs_losses['train_kld'] = PL_model.L_train_kld_list
+        all_epochs_losses['train_mmd'] = PL_model.L_train_mmd_list
+        all_epochs_losses['train_pheno'] = PL_model.L_train_pheno_list
+        all_epochs_losses['train_precision'] = PL_model.train_precision_list
+        all_epochs_losses['train_recall'] = PL_model.train_recall_list
+        all_epochs_losses['train_f1'] = PL_model.train_f1_list
 
         return (
                 PL_model,
@@ -369,7 +338,6 @@ def save_results(
     # final epoch losses
     final_epoch_columns = [
                     'train_L',
-                    'val_L',
                     'train_NLL',
                     'train_kld',
                     'train_mmd',
@@ -377,13 +345,6 @@ def save_results(
                     'train_precision',
                     'train_recall',
                     'train_f1',
-                    'val_NLL',
-                    'val_kld',
-                    'val_mmd',
-                    'val_pheno',
-                    'val_precision',
-                    'val_recall',
-                    'val_f1'
     ]               
     final_epoch_dict = dict(map(lambda column, data : (column, [data]), final_epoch_columns, final_epoch_results))
     final_epoch_df = pd.DataFrame(final_epoch_dict)
@@ -406,6 +367,8 @@ if __name__ == '__main__':
 
     # inpurt parameters, variables, and paths
     args = get_args()
+    # make output folder directory
+    os.makedirs(args.output_folder_path, exist_ok=True)
     # set GPU
     set_GPU()
     # set seed for reproducibility 
