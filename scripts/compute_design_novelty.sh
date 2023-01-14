@@ -10,7 +10,7 @@ export PYTHONPATH=${PYTHONPATH}:${DIR}
 export dataset_path='.././data/ACS_SynBio_SH3_dataset.csv'
 export output_results_path='.././outputs/novelty/SH3_DesignTrainDataset_MinLeven.csv'
 export SEED=42
-export option='design'
+export option='design' # not important variable here...
 
 python ../compute_dataset_novelty.py \
 		--dataset_path ${dataset_path} \
