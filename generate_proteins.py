@@ -195,6 +195,7 @@ def sample_func_SH3(
     args: any,
     model: nn.Module,
     aniso_dist: torch.distributions.multivariate_normal.MultivariateNormal,
+    n: int=100
     ) -> (
         torch.FloatTensor,
         torch.FloatTensor,
@@ -207,12 +208,12 @@ def sample_func_SH3(
     model.eval()
 
     # set up the sequence context.
-    X_context = torch.zeros((args.N,82,21)).to(args.DEVICE)
+    X_context = torch.zeros((n,82,21)).to(args.DEVICE)
     X_context_cat = X_context.clone()
     X_context_greedy = X_context.clone()
 
     # latent-conditional info.
-    Z_context = aniso_dist.sample((args.N,)).to(args.DEVICE)
+    Z_context = aniso_dist.sample((n,)).to(args.DEVICE)
     Z_NOcontext = torch.zeros_like(Z_context)
 
     # generate sequences
@@ -314,6 +315,7 @@ def convert_list_to_tensor(
 
     return x_onehot
 
+@torch.no_grad()
 def diversify_gene(
     args: any,
     model: nn.Module,
@@ -352,7 +354,53 @@ def diversify_gene(
     ).cpu()
     
     return X_diversify_samples
+           
 
+    
+def randomly_diversify_gene(
+    args: any,
+    model: nn.Module,
+    seq_list: list,
+    max_seq_len: int,
+    L: int
+    ) -> torch.FloatTensor:
+    
+    # eval mode: 
+    model.eval()
+    
+    # gap region
+    num_gaps = max_seq_len - len(seq_list[0])
+    
+    # number of candidates 
+    n = 5000
+    
+    # create torch tensor
+    X = convert_list_to_tensor(
+                seq_list=seq_list,
+                max_seq_len=max_seq_len
+    )
+    
+    if len(X.shape) == 2:
+        X = X.unsqueeze(0).repeat(n,1,1)
+    elif len(X.shape) != 3:
+        quit
+    else:
+        pass
+    
+    X_temp = model.create_uniform_tensor(args=args,X=X)
+    print(X_temp.shape)
+    # diversify sequence of interest
+    X_rand_diversify_samples = model.randomly_diversify(
+                                            args=args,
+                                            X_context=X.to(args.DEVICE),
+                                            L=L,
+                                            option='categorical'
+    ).cpu()
+    
+    # include deletion gaps
+    X_rand_diversify_samples[:, -1, -num_gaps:,:] = X[:,-num_gaps:, :]
+    
+    return X_rand_diversify_samples, X
 
 def diversify_seq(
     args: any,
@@ -395,12 +443,23 @@ def diversify_seq(
         z_context=Z_NOcontext,
         L=L
     )
-    
+
+
+    # random diversification
+    X_random_diversify, _ = randomly_diversify_gene(
+            args=args,
+            model=model,
+            seq_list=seq_list,
+            max_seq_len=max_seq_len,
+            L=L
+    )
+
     return (
         X_latent_diversify,
         X_NOlatent_diversify,
         Z_context,
-        Z_NOcontext
+        Z_NOcontext,
+        X_random_diversify
     )
 
 
@@ -435,6 +494,7 @@ def design_SH3_LatentOnly(
         args=args,
         model=model,
         aniso_dist=aniso_dist,
+        n=300
     )      
         
     # generate dataframe for the amino acid sequences of the categorical sampling
@@ -503,7 +563,7 @@ def diversify_SH3_WT(
         L = round( len(WT_seq[0].replace('-','')) * perc)
         
         # get data tensors
-        Xwt_latent_diversify, Xwt_NOlatent_diversify, Zwt_context, Zwt_NOcontext = diversify_seq(
+        Xwt_latent_diversify, Xwt_NOlatent_diversify, Zwt_context, Zwt_NOcontext, Xwt_random_diversify = diversify_seq(
                         args=args,
                         model=model,
                         aniso_dist=aniso_dist,
@@ -531,18 +591,31 @@ def diversify_SH3_WT(
         Xwt_NOlatent_df = create_df(
                 args=args,
                 aa_seqs=Xwt_NOlatent_seqs,
-                z=Zwt_context.cpu()
+                z=torch.zeros((len(Xwt_NOlatent_seqs), Zwt_context.cpu().shape[-1]))
+        )
+        
+
+        # generate dataframes for the amino acids that randomly diversified 
+        Xwt_random_seqs = create_seqs(
+                X=Xwt_random_diversify
+        )
+        
+
+        Xwt_random_df = create_df(
+                args=args,
+                aa_seqs=Xwt_random_seqs,
+                z=torch.zeros((len(Xwt_random_seqs), Zwt_context.cpu().shape[-1]))
         )
 
-
         # save the tensor predictions 
-        design_tensors = (Xwt_latent_diversify, Xwt_NOlatent_diversify, Zwt_context, Zwt_NOcontext)
+        design_tensors = (Xwt_latent_diversify, Xwt_NOlatent_diversify, Zwt_context, Zwt_NOcontext, Xwt_random_diversify)
         torch.save(design_tensors, os.path.join(args.save_dir, f"WT_diversify[L={L}].tensors.{ii}"))
 
         # save datafranes
         Xwt_latent_df.to_csv(os.path.join(args.save_dir, f"WT_diversify[L={L}].csv"), index=False)
         Xwt_NOlatent_df.to_csv(os.path.join(args.save_dir, f"WT_diversify_NOlatent[L={L}].csv"), index=False)
-        
+        Xwt_random_df.to_csv(os.path.join(args.save_dir, f"WT_diversify_random[L={L}].csv"), index=False)
+
 
     return 
 
@@ -607,11 +680,9 @@ def diversify_partial_rescue_paralog(
 
     # drop miss paralog annotations...
     partial_para_nat_df = partial_para_nat_df.dropna(subset=['orthologous_group'])
-
-    # find the partial rescue paralog with an annotation with optimal norm R.E.
-    paralog_of_interest_df = partial_para_nat_df.iloc[
-        np.argmax(partial_para_nat_df.RE_norm)
-    ].to_frame().T
+    paralog_of_interest_df = partial_para_nat_df.loc[
+            partial_para_nat_df.Sequences_unaligned == 'NKILFYVEAMYDYTATIEEEFNFQAGDIIAVTDIPDDGWWSGELLDEARREEGRHVFPSNFVRLF'
+    ]
     
     # save the spreadsheet for the paralog of interest
     paralog_of_interest_df.to_csv(os.path.join(args.save_dir, f"PartialRescueParalog.csv"), index = False)
@@ -623,7 +694,7 @@ def diversify_partial_rescue_paralog(
         L = round( len(partial_paralog_seq[0].replace('-','')) * perc)
 
         # get data tensors
-        Xpartial_latent_diversify, Xpartial_NOlatent_diversify, Zpartial_context, Zpartial_NOcontext = diversify_seq(
+        Xpartial_latent_diversify, Xpartial_NOlatent_diversify, Zpartial_context, Zpartial_NOcontext, Xpartial_random_diversify = diversify_seq(
                 args=args,
                 model=model,
                 aniso_dist=aniso_dist,
@@ -643,7 +714,7 @@ def diversify_partial_rescue_paralog(
                 z=Zpartial_context.cpu()
         )
         
-        # generate dataframes for the amino acid sequences that used latent conditoning + known amino acids
+        # generate dataframes for the amino acid sequences that used latent conditioning + known amino acids
         Xpartial_NOlatent_seqs = create_seqs(
                 X=Xpartial_NOlatent_diversify
         )
@@ -651,23 +722,122 @@ def diversify_partial_rescue_paralog(
         Xpartial_NOlatent_df = create_df(
                 args=args,
                 aa_seqs=Xpartial_NOlatent_seqs,
-                z=Zpartial_context.cpu()
+                z=torch.zeros((len(Xpartial_NOlatent_seqs), Zpartial_context.shape[-1]))
         )
 
+        # generate dataframes for the amino acid sequences that used latent conditioning + known amino acids
+        Xpartial_random_seqs = create_seqs(
+                X=Xpartial_random_diversify
+        )
+
+        Xpartial_random_df = create_df(
+                args=args,
+                aa_seqs=Xpartial_random_seqs,
+                z=torch.zeros((len(Xpartial_random_seqs), Zpartial_context.shape[-1]))
+        )
 
         # save the tensor predictions 
-        design_tensors = (Xpartial_latent_diversify, Xpartial_NOlatent_diversify, Zpartial_context, Zpartial_NOcontext)
+        design_tensors = (Xpartial_latent_diversify, Xpartial_NOlatent_diversify, Zpartial_context, Zpartial_NOcontext, Xpartial_random_diversify)
         torch.save(design_tensors, os.path.join(args.save_dir, f"PartialParalog_diversify[L={L}].tensors.{ii}"))
 
         # save datafranes
         Xpartial_latent_df.to_csv(os.path.join(args.save_dir, f"PartialParalog_diversify[L={L}].csv"), index=False)
         Xpartial_NOlatent_df.to_csv(os.path.join(args.save_dir, f"PartialParalog_diversify_NOlatent[L={L}].csv"), index=False)
-
+        Xpartial_random_df.to_csv(os.path.join(args.save_dir, f"PartialParalog_diversify_random[L={L}].csv"), index=False)
 
 
     return 
 
+     
+def diversify_paralog(
+        args: nn.Module,
+        model: nn.Module,
+        aniso_dist: torch.distributions.multivariate_normal.MultivariateNormal,
+    ) -> None:
+
+    df = pd.read_csv(args.dataset_path)
+    nat_df = df[df.header.str.contains('nat')]
+    partial_upper_bound, partial_lower_bound = compute_partial_bounds(
+                                                            nat_RE_norm=np.array(nat_df.RE_norm.values)
+    )
+
+    # define partial rescue paralog dataframe
+    paralog_nat_df = nat_df[~(nat_df.orthologous_group == 'NOG09120')]
+    nonfunc_para_nat_df = paralog_nat_df[
+            paralog_nat_df.RE_norm < partial_lower_bound
+    ]
+
+    # drop miss paralog annotations...
+    nonfunc_para_nat_df = nonfunc_para_nat_df.dropna(subset=['orthologous_group'])
+    paralog_of_interest_df = nonfunc_para_nat_df.loc[
+            nonfunc_para_nat_df.Sequences_unaligned == 'PKENPWATAEYDYDAAEDNELTFVENDKIINIEFVDDDWWLGELEKDGSKGLFPSNYVSLGN' 
+    ]
     
+    # save the spreadsheet for the paralog of interest
+    paralog_of_interest_df.to_csv(os.path.join(args.save_dir, f"NonfuncParalog.csv"), index = False)
+
+    nonfunc_paralog_seq = list(paralog_of_interest_df.Sequences_unaligned)
+    
+    for ii, perc in enumerate([0.25, 0.5, 0.75]):
+
+        L = round( len(nonfunc_paralog_seq[0].replace('-','')) * perc)
+
+        # get data tensors
+        Xparalog_latent_diversify, Xparalog_NOlatent_diversify, Zparalog_context, Zparalog_NOcontext, Xparalog_random_diversify = diversify_seq(
+                args=args,
+                model=model,
+                aniso_dist=aniso_dist,
+                seq_list=nonfunc_paralog_seq,
+                max_seq_len=args.max_seq_len,
+                L=L,
+                n=args.N
+        )
+
+        # generate dataframes for the amino acid sequences that used latent conditioning + known amino acids 
+        Xparalog_diversify_seqs = create_seqs(
+                X=Xparalog_latent_diversify
+        )
+        Xparalog_latent_df = create_df(
+                args=args,
+                aa_seqs=Xparalog_diversify_seqs,
+                z=Zparalog_context.cpu()
+        )
+        
+        # generate dataframes for the amino acid sequences that used latent conditioning + known amino acids
+        Xparalog_NOlatent_seqs = create_seqs(
+                X=Xparalog_NOlatent_diversify
+        )
+
+        Xparalog_NOlatent_df = create_df(
+                args=args,
+                aa_seqs=Xparalog_NOlatent_seqs,
+                z=torch.zeros((len(Xparalog_NOlatent_seqs), Zparalog_context.shape[-1]))
+        )
+
+        # generate dataframes for the amino acid sequences that used latent conditioning + known amino acids
+        Xparalog_random_seqs = create_seqs(
+                X=Xparalog_random_diversify
+        )
+
+        Xparalog_random_df = create_df(
+                args=args,
+                aa_seqs=Xparalog_random_seqs,
+                z=torch.zeros((len(Xparalog_random_seqs), Zparalog_context.shape[-1]))
+        )
+
+        # save the tensor predictions 
+        design_tensors = (Xparalog_latent_diversify, Xparalog_NOlatent_diversify, Zparalog_context, Zparalog_NOcontext, Xparalog_random_diversify)
+        torch.save(design_tensors, os.path.join(args.save_dir, f"NonfuncParalog_diversify[L={L}].tensors.{ii}"))
+
+        # save datafranes
+        Xparalog_latent_df.to_csv(os.path.join(args.save_dir, f"NonfuncParalog_diversify[L={L}].csv"), index=False)
+        Xparalog_NOlatent_df.to_csv(os.path.join(args.save_dir, f"NonfuncParalog_diversify_NOlatent[L={L}].csv"), index=False)
+        Xparalog_random_df.to_csv(os.path.join(args.save_dir, f"NonfuncParalog_diversify_random[L={L}].csv"), index=False)
+
+
+    return 
+
+
 def diversify_Sho1_orthology(
                 args: any,
                 model: nn.Module,
@@ -694,7 +864,7 @@ def diversify_Sho1_orthology(
         L = round( len(ortholog_seq[0].replace('-','')) * perc)
         
         # get data tensors
-        Xortho_latent_diversify, Xortho_NOlatent_diversify, Zortho_context, Zortho_NOcontext = diversify_seq(
+        Xortho_latent_diversify, Xortho_NOlatent_diversify, Zortho_context, Zortho_NOcontext, Xortho_random_diversify = diversify_seq(
                         args=args,
                         model=model,
                         aniso_dist=aniso_dist,
@@ -722,18 +892,28 @@ def diversify_Sho1_orthology(
         Xortho_NOlatent_df = create_df(
                 args=args,
                 aa_seqs=Xortho_NOlatent_seqs,
-                z=Zortho_context.cpu()
+                z=torch.zeros((len(Xortho_NOlatent_seqs), Zortho_context.cpu().shape[-1]))
         )
 
+        # generate dataframes for the amino acid sequences that used random diversification
+        Xortho_random_seqs = create_seqs(
+                X=Xortho_random_diversify
+        )
+
+        Xortho_random_df = create_df(
+                args=args,
+                aa_seqs=Xortho_random_seqs,
+                z=torch.zeros((len(Xortho_random_seqs), Zortho_context.cpu().shape[-1]))
+        )
 
         # save the tensor predictions 
-        design_tensors = (Xortho_latent_diversify, Xortho_NOlatent_diversify, Zortho_context, Zortho_NOcontext)
+        design_tensors = (Xortho_latent_diversify, Xortho_NOlatent_diversify, Zortho_context, Zortho_NOcontext, Xortho_random_diversify)
         torch.save(design_tensors, os.path.join(args.save_dir, f"Ortholog_diversify[L={L}].tensors.{ii}"))
 
         # save datafranes
         Xortho_latent_df.to_csv(os.path.join(args.save_dir, f"Ortholog_diversify[L={L}].csv"), index=False)
         Xortho_NOlatent_df.to_csv(os.path.join(args.save_dir, f"Ortholog_diversify_NOlatent[L={L}].csv"), index=False)
-        
+        Xortho_random_df.to_csv(os.path.join(args.save_dir, f"Ortholog_diversify_random[L={L}].csv"), index=False)
 
     return 
 
@@ -800,4 +980,11 @@ if __name__ == '__main__':
              args=args,
              model=model,
              aniso_dist=latent_func_aniso_dist
+    )
+
+    # collect and save paralog latent diversification
+    diversify_paralog(
+            args=args,
+            model=model,
+            aniso_dist=latent_func_aniso_dist
     )

@@ -683,3 +683,80 @@ class SS_InfoVAE(nn.Module):
         return X_context
 
 
+
+    def create_uniform_tensor(
+            self,
+            args: any,
+            X: torch.FloatTensor
+        ) -> torch.FloatTensor:
+
+        batch_size, seq_length, aa_length = X.shape
+
+        X_temp = torch.ones_like(X)
+        X_temp[:,:,-1] = X_temp[:,:,-1]*0 # give no prob to the padded tokens
+        X_temp[:,:,:-1] = X_temp[:,:,:-1] / (aa_length-1)
+
+        return X_temp
+
+    @torch.no_grad()
+    def randomly_diversify(
+        self,
+        args: any,
+        X_context: torch.FloatTensor,
+        L: int=1,
+        option: str='categorical'
+        ) -> torch.FloatTensor:
+
+
+        # copy context sequence to track the conditioned amino acids
+        X_template = X_context.clone()
+
+        # eval mode (important, especially with BatchNorms)
+        self.eval()
+
+        # misc helper variables/objects
+        protein_len = X_context.shape[1] # length of the maximum sequence
+        n = X_context.shape[0] # number of sequences to generate
+
+        # init. placeholder tensors
+        X_temp = torch.zeros_like(X_context).to(args.DEVICE) # [B, L, 21]
+        X_context = torch.zeros_like(X_context).unsqueeze(1).repeat(1,
+                                                                       protein_len+1,
+                                                                       1,
+                                                                       1
+        ).to(args.DEVICE) # [B, L+1, L, 21]
+
+        # insert the conditioned amino acids
+        X_temp[:,:L,:] = X_template[:,:L,:]
+        X_context[:,:,:L,:] = X_template.unsqueeze(1).repeat(
+                                                            1,
+                                                            protein_len+1,
+                                                            1,
+                                                            1
+        )[:,:,:L,:]
+
+
+        for ii in tqdm(range(L, protein_len)):
+
+
+            # make logit predictions for the remaining positions
+            X_logits = self.create_uniform_tensor(
+                        args=args,
+                        X=X_template
+            )
+
+            # insert amino acid at the next position
+            X_temp[:,ii,:] = self.aa_sample(X_logits.softmax(dim=-1))[:,ii]
+            # update the next index of the conditional tensor
+            X_context[:,ii,:,:] = X_logits.softmax(dim=-1)
+            # update the context
+            X_context[:,ii,:ii,:] = X_temp[:,:ii,:]
+
+            # last index is the final latent-based AR prediction
+            X_context[:,-1,:,:] = X_temp
+
+        return X_context
+
+
+
+
