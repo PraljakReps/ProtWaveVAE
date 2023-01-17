@@ -49,7 +49,7 @@ def get_args() -> any:
     parser.add_argument('--filenames', default='L=16|L=33|L=50')
     parser.add_argument('--leven_column', default='')
     parser.add_argument('--output_path', default='')
-
+    parser.add_argument('--reference', default='WT')
 
     # model training variables
     parser.add_argument('--SEED', default=42, type=int, help='Random seed')
@@ -96,6 +96,25 @@ def get_args() -> any:
     return args
 
 
+def ref_seq(args:any) -> str:
+
+    if args.reference == 'WT':
+        WT_seq = 'DNFIYKAKALYPYDADDDDAYEISFEQNEILQVSDIEGRWWKARRANGETGIIPSNYVQLIDGPEE'
+        seq = WT_seq
+
+    elif args.reference == 'PARTIAL':
+        partial_seq = 'NKILFYVEAMYDYTATIEEEFNFQAGDIIAVTDIPDDGWWSGELLDEARREEGRHVFPSNFVRLF'
+        seq = partial_seq
+    
+    elif args.reference == 'PARALOG':
+        paralog_seq = 'PKENPWATAEYDYDAAEDNELTFVENDKIINIEFVDDDWWLGELEKDGSKGLFPSNYVSLGN'
+        seq = paralog_seq
+
+    elif args.reference == 'ORTHOLOG':
+        ortholog_seq = 'GVYMHRVKAVYSYKANPEDPTELTFEKGDTLEVVDIQGKWWQARQVKADGQTNIGIVPSNYMQVI'
+        seq = ortholog_seq
+    
+    return seq
 
 def guided_random_diver_gene(
     args: any,
@@ -114,7 +133,9 @@ def guided_random_diver_gene(
     model.eval()
     
     # useful parameters
-    seq_len = len(seq_list[0]) # sequence length with no gaps
+    seq_ref = ref_seq(args=args)
+    print(seq_ref)
+    seq_len = len(seq_ref) # sequence length with no gaps
     num_gaps = max_seq_len - seq_len # gap region
     
     # create torch tensor
@@ -125,7 +146,8 @@ def guided_random_diver_gene(
     
 
     X_temp = model.create_uniform_tensor(args=args,X=X)
-    
+   
+    print(f'Seq length: {seq_len} | num gaps: {num_gaps}')
     # diversify sequence of interest
     X_rand_diversify_samples = model.guided_randomly_diversify(
                                             args=args,
@@ -144,6 +166,9 @@ def guided_random_diver_gene(
 
     # amino acid sequences
     seq_rand_diversify = gen_proteins.create_seqs(X=X_rand_diversify_samples)
+    
+    seq_lengths = [len(seq) <= 66 for seq in seq_rand_diversify]
+    print(f'Number of sequence below 66: {sum(seq_lengths)}')
 
     # hamming distance and similarity
     hamming_dists, similarity = util_tools.compute_hamming_dist(

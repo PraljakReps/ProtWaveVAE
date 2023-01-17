@@ -17,6 +17,7 @@ export L='16|31|46'
 export filenames='[novelty]NonfuncParalog_diversify[L=16].csv|[novelty]NonfuncParalog_diversify[L=31].csv|[novelty]NonfuncParalog_diversify[L=46].csv'
 export leven_column='min_leven[from=Paralog]'
 export output_path='../.././outputs/SH3_design_pool/NonfuncParalog/random_mutates'
+export reference='PARALOG'
 
 # model training variables
 export SEED=42

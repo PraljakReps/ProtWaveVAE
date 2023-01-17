@@ -13,10 +13,11 @@ export output_model_path='../.././outputs/SH3_task/final_model/final_ProtWaveVAE
 export save_dir='../.././outputs/SH3_design_pool'
 
 export file_path='../.././outputs/SH3_design_pool/PartialParalog/min_leven/'
-export L='16|31|46'
+export L='16|32|49'
 export filenames='[novelty]PartialParalog_diversify[L=16].csv|[novelty]PartialParalog_diversify[L=32].csv|[novelty]PartialParalog_diversify[L=49].csv'
 export leven_column='min_leven[from=Partial]'
 export output_path='../.././outputs/SH3_design_pool/PartialParalog/random_mutates'
+export reference='PARTIAL'
 
 # model training variables
 export SEED=42
@@ -64,6 +65,7 @@ python ../../mutate_proteins.py \
 		--output_model_path ${output_model_path} \
 		--file_path ${file_path} \
 		--output_path ${output_path} \
+	 	--reference ${reference} \
 		--filenames ${filenames} \
 		--L ${L} \
 		--leven_column ${leven_column} \

@@ -17,6 +17,7 @@ export L='16|33|50'
 export filenames='[novelty]WT_diversify[L=16].csv|[novelty]WT_diversify[L=33].csv|[novelty]WT_diversify[L=50].csv'
 export leven_column='min_leven[from=WT]'
 export output_path='../.././outputs/SH3_design_pool/WT/random_mutates'
+export reference='WT'
 
 # model training variables
 export SEED=42
@@ -65,6 +66,7 @@ python ../../mutate_proteins.py \
 		--file_path ${file_path} \
 		--output_path ${output_path} \
 		--filenames ${filenames} \
+		--reference ${reference} \
 		--L ${L} \
 		--leven_column ${leven_column} \
 		--save_dir ${save_dir} \

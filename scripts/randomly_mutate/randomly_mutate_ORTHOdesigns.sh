@@ -17,6 +17,7 @@ export L='16|32|49'
 export filenames='[novelty]Ortholog_diversify[L=16].csv|[novelty]Ortholog_diversify[L=32].csv|[novelty]Ortholog_diversify[L=49].csv'
 export leven_column='min_leven[from=Ortholog]'
 export output_path='../.././outputs/SH3_design_pool/Ortholog/random_mutates'
+export reference='ORTHOLOG'
 
 # model training variables
 export SEED=42
@@ -65,6 +66,7 @@ python ../../mutate_proteins.py \
 		--file_path ${file_path} \
 		--output_path ${output_path} \
 		--filenames ${filenames} \
+		--reference ${reference} \
 		--L ${L} \
 		--leven_column ${leven_column} \
 		--save_dir ${save_dir} \
