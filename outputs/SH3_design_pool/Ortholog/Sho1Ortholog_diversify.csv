@@ -1,0 +1,2 @@
+header,DomainName,Protein,Sequences_unaligned,orthologous_group,PhyGroup,Species,RE_norm,min_leven,perc_min_leven[dissimilarity]
+nat_2146,"fgenesh1_pg.C_scaffold_16000022_domain_number[1],jgi",KOG4226,GVYMHRVKAVYSYKANPEDPTELTFEKGDTLEVVDIQGKWWQARQVKADGQTNIGIVPSNYMQVI,NOG09120,,Batrachochytrium dendrobatidis JAM81,0.5682788747685461,25.0,0.3846153846153846

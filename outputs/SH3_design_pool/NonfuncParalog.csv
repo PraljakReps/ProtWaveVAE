@@ -1,2 +1,0 @@
-header,DomainName,Protein,Sequences_unaligned,orthologous_group,PhyGroup,Species,RE_norm,min_leven,perc_min_leven[dissimilarity]
-nat_1275,"YCR088W_domain_number[1],jgi",Drebrins and related actin binding proteins,PKENPWATAEYDYDAAEDNELTFVENDKIINIEFVDDDWWLGELEKDGSKGLFPSNYVSLGN,KOG3655,Ascomycota,Saccharomyces cerevisiae S288C,-0.06857466194848327,9.0,0.14516129032258066
