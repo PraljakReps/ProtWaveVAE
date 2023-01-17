@@ -1,7 +1,8 @@
 # Misc
 *.sbatch
 *.args
-
+*.out
+w
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

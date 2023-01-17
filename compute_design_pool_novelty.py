@@ -86,6 +86,27 @@ def compute_dists(
 
 
 
+def return_ref_seqs(
+        args: any
+    ) -> (
+            list,
+            list,
+            list,
+            list
+    ):
+        WT_seq = ['DNFIYKAKALYPYDADDDDAYEISFEQNEILQVSDIEGRWWKARRANGETGIIPSNYVQLIDGPEE']
+        Partial_paralog_seq = ['NKILFYVEAMYDYTATIEEEFNFQAGDIIAVTDIPDDGWWSGELLDEARREEGRHVFPSNFVRLF']
+        Nonfunc_paralog_seq = ['PKENPWATAEYDYDAAEDNELTFVENDKIINIEFVDDDWWLGELEKDGSKGLFPSNYVSLGN']
+        Ortholog_seq = ['GVYMHRVKAVYSYKANPEDPTELTFEKGDTLEVVDIQGKWWQARQVKADGQTNIGIVPSNYMQVI']
+
+        return (
+                WT_seq,
+                Partial_paralog_seq,
+                Nonfunc_paralog_seq,
+                Ortholog_seq
+        )
+
+
 
 def collect_levenshteins(
         args: any,
@@ -97,6 +118,9 @@ def collect_levenshteins(
     # get sequences (training dataset)
     nat_seqs = list(nat_df.Sequences_unaligned)
     design_seqs = list(design_df.Sequences_unaligned)
+    
+    # get reference sequeences
+    WT_seq, Partial_paralog_seq, Nonfunc_paralog_seq, Ortholog_seq = return_ref_seqs(args=args)
 
     # min levenshtein distances referenced from the natural dataset
     min_leven_from_nat, perc_min_leven_from_nat = compute_dists(
@@ -110,15 +134,40 @@ def collect_levenshteins(
                                             ref_list=nat_seqs+design_seqs
     )
 
+    # min leven. distances referenced to sequence of interest
+    min_leven_from_WT, perc_min_leven_from_WT = compute_dists(
+                                            target_list=target_seqs,
+                                            ref_list=WT_seq
+    )
+    min_leven_from_partial, perc_min_leven_from_partial = compute_dists(
+                                            target_list=target_seqs,
+                                            ref_list=Partial_paralog_seq
+    )
+    min_leven_from_paralog, perc_min_leven_from_paralog = compute_dists(
+                                            target_list=target_seqs,
+                                            ref_list=Nonfunc_paralog_seq
+    )
+    min_leven_from_ortholog, perc_min_leven_from_ortholog = compute_dists(
+                                            target_list=target_seqs,
+                                            ref_list=Ortholog_seq
+    )
        
     # create dict. for containing novelty measurements
     novel_dict = {}
     
-    novel_dict['header'] = [f'seq_{ii}' for ii, _ in enumerate(target_seqs)]
+    novel_dict['header_2'] = [f'seq_{ii}' for ii, _ in enumerate(target_seqs)]
     novel_dict['min_leven[from=nat]'] = min_leven_from_nat
     novel_dict['perc_min_leven[from=nat]'] = perc_min_leven_from_nat
     novel_dict['min_leven[from=all]'] = min_leven_from_all
     novel_dict['perc_min_leven[from=all]'] = perc_min_leven_from_all
+    novel_dict['min_leven[from=WT]'] = min_leven_from_WT
+    novel_dict['perc_min_leven[from=WT]'] = perc_min_leven_from_WT
+    novel_dict['min_leven[from=Ortholog]'] = min_leven_from_ortholog
+    novel_dict['perc_min_leven[from=Ortholog]'] = perc_min_leven_from_ortholog
+    novel_dict['min_leven[from=Partial]'] = min_leven_from_partial
+    novel_dict['perc_min_leven[from=Partial]'] = perc_min_leven_from_partial
+    novel_dict['min_leven[from=Paralog]'] = min_leven_from_paralog
+    novel_dict['perc_min_leven[from=Paralog]'] = perc_min_leven_from_paralog
 
     novel_df = pd.DataFrame(novel_dict)
 
@@ -147,9 +196,14 @@ def get_filenames(args:any) -> list:
     for ref_filename in [
                         'PartialRescueParalog.csv',
                         'Sho1Ortholog_diversify.csv',
+                        'NonfuncParalog.csv'
                         ]:
+        
+        try:
+            filename_list.remove(ref_filename)
 
-        filename_list.remove(ref_filename)
+        except ValueError:
+            pass
 
     return filename_list
 
@@ -185,6 +239,7 @@ if __name__ == '__main__':
                 design_df=train_design_df
         )
         
+        min_leven_design_df = pd.concat((design_df, min_leven_design_df), axis = 1)
 
         # save dataframe
         output_df_path = args.output_df_path + '/[novelty]' + filename

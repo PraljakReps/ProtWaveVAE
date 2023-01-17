@@ -532,12 +532,12 @@ def design_SH3_LatentOnly(
 
     # save the tensor predictions
     design_tensors = (X_samples_cat, X_samples_argmax, X_NOlatent_samples, Z_sample_context, Z_sample_NOcontext)
-    torch.save(design_tensors, os.path.join(args.save_dir, f"LatentOnly_Sho1Designs.tensors"))
+   # torch.save(design_tensors, os.path.join(args.save_dir, f"LatentOnly/LatentOnly_Sho1Designs.tensors"))
 
     # save dataframes
-    cat_sample_df.to_csv(os.path.join(args.save_dir, f"LatentOnly_Sho1Designs[categorical].csv"), index=False)
-    Nocontext_sample_df.to_csv(os.path.join(args.save_dir, f"NoLatent_Sho1Designs[categorical].csv"), index=False)
-    argmax_sample_df.to_csv(os.path.join(args.save_dir, f"Latent_Sho1Designs[argmax].csv"), index=False)
+    cat_sample_df.to_csv(os.path.join(args.save_dir, f"LatentOnly/LatentOnly_Sho1Designs[categorical].csv"), index=False)
+    Nocontext_sample_df.to_csv(os.path.join(args.save_dir, f"LatentOnly/NoLatent_Sho1Designs[categorical].csv"), index=False)
+    argmax_sample_df.to_csv(os.path.join(args.save_dir, f"LatentOnly/Latent_Sho1Designs[argmax].csv"), index=False)
 
 
     return 
@@ -609,12 +609,12 @@ def diversify_SH3_WT(
 
         # save the tensor predictions 
         design_tensors = (Xwt_latent_diversify, Xwt_NOlatent_diversify, Zwt_context, Zwt_NOcontext, Xwt_random_diversify)
-        torch.save(design_tensors, os.path.join(args.save_dir, f"WT_diversify[L={L}].tensors.{ii}"))
+    #    torch.save(design_tensors, os.path.join(args.save_dir, f"WT/WT_diversify[L={L}].tensors.{ii}"))
 
         # save datafranes
-        Xwt_latent_df.to_csv(os.path.join(args.save_dir, f"WT_diversify[L={L}].csv"), index=False)
-        Xwt_NOlatent_df.to_csv(os.path.join(args.save_dir, f"WT_diversify_NOlatent[L={L}].csv"), index=False)
-        Xwt_random_df.to_csv(os.path.join(args.save_dir, f"WT_diversify_random[L={L}].csv"), index=False)
+        Xwt_latent_df.to_csv(os.path.join(args.save_dir, f"WT/WT_diversify[L={L}].csv"), index=False)
+        Xwt_NOlatent_df.to_csv(os.path.join(args.save_dir, f"WT/WT_diversify_NOlatent[L={L}].csv"), index=False)
+    #   Xwt_random_df.to_csv(os.path.join(args.save_dir, f"WT/WT_diversify_random[L={L}].csv"), index=False)
 
 
     return 
@@ -685,7 +685,7 @@ def diversify_partial_rescue_paralog(
     ]
     
     # save the spreadsheet for the paralog of interest
-    paralog_of_interest_df.to_csv(os.path.join(args.save_dir, f"PartialRescueParalog.csv"), index = False)
+    paralog_of_interest_df.to_csv(os.path.join(args.save_dir, f"PartialParalog/PartialRescueParalog.csv"), index = False)
 
     partial_paralog_seq = list(paralog_of_interest_df.Sequences_unaligned)
     
@@ -738,12 +738,12 @@ def diversify_partial_rescue_paralog(
 
         # save the tensor predictions 
         design_tensors = (Xpartial_latent_diversify, Xpartial_NOlatent_diversify, Zpartial_context, Zpartial_NOcontext, Xpartial_random_diversify)
-        torch.save(design_tensors, os.path.join(args.save_dir, f"PartialParalog_diversify[L={L}].tensors.{ii}"))
+       # torch.save(design_tensors, os.path.join(args.save_dir, f"PartialParalog/PartialParalog_diversify[L={L}].tensors.{ii}"))
 
         # save datafranes
-        Xpartial_latent_df.to_csv(os.path.join(args.save_dir, f"PartialParalog_diversify[L={L}].csv"), index=False)
-        Xpartial_NOlatent_df.to_csv(os.path.join(args.save_dir, f"PartialParalog_diversify_NOlatent[L={L}].csv"), index=False)
-        Xpartial_random_df.to_csv(os.path.join(args.save_dir, f"PartialParalog_diversify_random[L={L}].csv"), index=False)
+        Xpartial_latent_df.to_csv(os.path.join(args.save_dir, f"PartialParalog/PartialParalog_diversify[L={L}].csv"), index=False)
+        Xpartial_NOlatent_df.to_csv(os.path.join(args.save_dir, f"PartialParalog/PartialParalog_diversify_NOlatent[L={L}].csv"), index=False)
+       # Xpartial_random_df.to_csv(os.path.join(args.save_dir, f"PartialParalog_diversify_random[L={L}].csv"), index=False)
 
 
     return 
@@ -774,7 +774,7 @@ def diversify_paralog(
     ]
     
     # save the spreadsheet for the paralog of interest
-    paralog_of_interest_df.to_csv(os.path.join(args.save_dir, f"NonfuncParalog.csv"), index = False)
+    paralog_of_interest_df.to_csv(os.path.join(args.save_dir, f"NonfuncParalog/NonfuncParalog.csv"), index = False)
 
     nonfunc_paralog_seq = list(paralog_of_interest_df.Sequences_unaligned)
     
@@ -827,12 +827,12 @@ def diversify_paralog(
 
         # save the tensor predictions 
         design_tensors = (Xparalog_latent_diversify, Xparalog_NOlatent_diversify, Zparalog_context, Zparalog_NOcontext, Xparalog_random_diversify)
-        torch.save(design_tensors, os.path.join(args.save_dir, f"NonfuncParalog_diversify[L={L}].tensors.{ii}"))
+       # torch.save(design_tensors, os.path.join(args.save_dir, f"NonfuncParalog/NonfuncParalog_diversify[L={L}].tensors.{ii}"))
 
         # save datafranes
-        Xparalog_latent_df.to_csv(os.path.join(args.save_dir, f"NonfuncParalog_diversify[L={L}].csv"), index=False)
-        Xparalog_NOlatent_df.to_csv(os.path.join(args.save_dir, f"NonfuncParalog_diversify_NOlatent[L={L}].csv"), index=False)
-        Xparalog_random_df.to_csv(os.path.join(args.save_dir, f"NonfuncParalog_diversify_random[L={L}].csv"), index=False)
+        Xparalog_latent_df.to_csv(os.path.join(args.save_dir, f"NonfuncParalog/NonfuncParalog_diversify[L={L}].csv"), index=False)
+        Xparalog_NOlatent_df.to_csv(os.path.join(args.save_dir, f"NonfuncParalog/NonfuncParalog_diversify_NOlatent[L={L}].csv"), index=False)
+       # Xparalog_random_df.to_csv(os.path.join(args.save_dir, f"NonfuncParalog_diversify_random[L={L}].csv"), index=False)
 
 
     return 
@@ -853,7 +853,7 @@ def diversify_Sho1_orthology(
     ortholog_df = func_sho1_df.iloc[np.argmax(func_sho1_df['perc_min_leven[dissimilarity]']),:].to_frame().T
 
     # save dataframe
-    ortholog_df.to_csv(os.path.join(args.save_dir, f"Sho1Ortholog_diversify.csv"), index=False)
+    ortholog_df.to_csv(os.path.join(args.save_dir, f"Ortholog/Sho1Ortholog_diversify.csv"), index=False)
 
     # get sequence
     ortholog_seq = list(ortholog_df.Sequences_unaligned)
@@ -908,12 +908,12 @@ def diversify_Sho1_orthology(
 
         # save the tensor predictions 
         design_tensors = (Xortho_latent_diversify, Xortho_NOlatent_diversify, Zortho_context, Zortho_NOcontext, Xortho_random_diversify)
-        torch.save(design_tensors, os.path.join(args.save_dir, f"Ortholog_diversify[L={L}].tensors.{ii}"))
+#        torch.save(design_tensors, os.path.join(args.save_dir, f"Ortholog/Ortholog_diversify[L={L}].tensors.{ii}"))
 
         # save datafranes
-        Xortho_latent_df.to_csv(os.path.join(args.save_dir, f"Ortholog_diversify[L={L}].csv"), index=False)
-        Xortho_NOlatent_df.to_csv(os.path.join(args.save_dir, f"Ortholog_diversify_NOlatent[L={L}].csv"), index=False)
-        Xortho_random_df.to_csv(os.path.join(args.save_dir, f"Ortholog_diversify_random[L={L}].csv"), index=False)
+        Xortho_latent_df.to_csv(os.path.join(args.save_dir, f"Ortholog/Ortholog_diversify[L={L}].csv"), index=False)
+        Xortho_NOlatent_df.to_csv(os.path.join(args.save_dir, f"Ortholog/Ortholog_diversify_NOlatent[L={L}].csv"), index=False)
+    #@   Xortho_random_df.to_csv(os.path.join(args.save_dir, f"Ortholog/Ortholog_diversify_random[L={L}].csv"), index=False)
 
     return 
 
