@@ -790,10 +790,12 @@ class SS_InfoVAE(nn.Module):
             self,
             args: any,
             X_context: torch.FloatTensor,
+            X_design: torch.FloatTensor,
             L: int=1,
             min_leven_dists: list=[],
             option: str='categorical',
-            seq_len: int=100,
+            design_seq_lens: list=[],
+            ref_seq_len: int=100,
             num_gaps: int=0
         ) -> torch.FloatTensor:
 
@@ -809,35 +811,32 @@ class SS_InfoVAE(nn.Module):
 
         # init. placeholder tensors
         X_temp = torch.zeros_like(X_context).to(args.DEVICE) # [B, L, 21]
-        X_context = torch.zeros_like(X_context).unsqueeze(1).repeat(
-                1,
-                protein_len+1,
-                1,
-                1
-        )[:,:,:,:]
-
-
+      
         # insert the whole instead of only the conditional info
         X_temp[:,:,:] = X_template[:,:,:]
-        X_context[:,:,:,:] = X_template.unsqueeze(1).repeat(
+        X_context = X_template.unsqueeze(1).repeat(
                 1,
                 protein_len+1,
                 1,
                 1
         )[:,:,:,:]
+        
 
-
+        # number of sites that fit along the length of the reference sequence
+        ref_window_size = (ref_seq_len - L)
 
         for ii, min_leven_dist in enumerate(min_leven_dists): # how many times to mutate positions
-
+            
             # positions that are allowed to be mutated
-            list_pos = [ii for ii in range(L, seq_len)] # get mutating positions
+            list_pos = [ii for ii in range(L, ref_seq_len)] # get mutating positions
             
             diff = 0 # no need to replace gaps with amino acids
-            if int(min_leven_dist) > len(list_pos):
+           
+            if int(min_leven_dist) > int(ref_window_size):
+                
                 diff = int(min_leven_dist) - len(list_pos)
                 # create new list position to account for longer sequence
-                list_pos = [ii for ii in range(L, seq_len + diff)]
+                list_pos = [ii for ii in range(L, ref_seq_len + diff)]
 
             for jj in range(int(min_leven_dist)):
 
@@ -855,8 +854,10 @@ class SS_InfoVAE(nn.Module):
                 X_context[ii,jj,pos_idx,:] = X_logits[ii,pos_idx]
                 # last index is the final sample
                 X_context[ii,-1,pos_idx,:] = X_temp[ii,pos_idx,:]
-                # fill in gaps
-                X_context[:,-1, -(num_gaps-diff):, -1] = 1
+          
+            # fill in gaps
+            X_context[ii,-1,-(num_gaps-diff):,:-1] = 0
+            X_context[ii,-1,-(num_gaps-diff):, -1] = 1
                 
 
         print(f'Length start {L} and list positions:', list_pos)

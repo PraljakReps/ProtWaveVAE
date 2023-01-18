@@ -1,2 +1,0 @@
-header,DomainName,Protein,Sequences_unaligned,orthologous_group,PhyGroup,Species,RE_norm,min_leven,perc_min_leven[dissimilarity]
-nat_3356,"fgenesh1_kg.25_#_33_#_Locus2806v1rpkm68.62_domain_number[1],jgi",Predicted proline-serine-threonine phosphatase-interacting protein (PSTPIP),NKILFYVEAMYDYTATIEEEFNFQAGDIIAVTDIPDDGWWSGELLDEARREEGRHVFPSNFVRLF,KOG2398,Basidiomycota,Gymnopus luxurians FD-317 M1,0.3464056093795808,5.0,0.0769230769230769

@@ -137,25 +137,33 @@ def guided_random_diver_gene(
     print(seq_ref)
     seq_len = len(seq_ref) # sequence length with no gaps
     num_gaps = max_seq_len - seq_len # gap region
-    
+    design_seq_lens = [len(seq) for seq in seq_list] # length of each design sequence
+    ref_seq_list = [seq_ref for _ in range(len(seq_list))] # copy reference sequence until size of the design pool is reached
     # create torch tensor
-    X = gen_proteins.convert_list_to_tensor(
+    X_ref = gen_proteins.convert_list_to_tensor(
+            seq_list = ref_seq_list,
+            max_seq_len=max_seq_len
+    )
+
+    X_design = gen_proteins.convert_list_to_tensor(
                 seq_list=seq_list,
                 max_seq_len=max_seq_len
     )
     
 
-    X_temp = model.create_uniform_tensor(args=args,X=X)
+   # X_temp = model.create_uniform_tensor(args=args,X=X)
    
     print(f'Seq length: {seq_len} | num gaps: {num_gaps}')
     # diversify sequence of interest
     X_rand_diversify_samples = model.guided_randomly_diversify(
                                             args=args,
-                                            X_context=X.to(args.DEVICE),
+                                            X_context=X_ref.to(args.DEVICE),
+                                            X_design=X_design.to(args.DEVICE),
                                             L=L,
                                             min_leven_dists=min_leven_dists,
                                             option='guided',
-                                            seq_len=seq_len,
+                                            design_seq_lens=design_seq_lens,
+                                            ref_seq_len=seq_len,
                                             num_gaps=num_gaps
     ).cpu()
     
@@ -166,20 +174,19 @@ def guided_random_diver_gene(
 
     # amino acid sequences
     seq_rand_diversify = gen_proteins.create_seqs(X=X_rand_diversify_samples)
-    
+    # get lengths for each mutant
     seq_lengths = [len(seq) <= 66 for seq in seq_rand_diversify]
-    print(f'Number of sequence below 66: {sum(seq_lengths)}')
 
     # hamming distance and similarity
     hamming_dists, similarity = util_tools.compute_hamming_dist(
-        seq1_list=seq_list,
+        seq1_list=ref_seq_list,
         seq2_list=seq_rand_diversify
     )
     
 
     return (
         X_rand_diversify_samples,
-        X,
+        X_design,
         seq_rand_diversify,
         hamming_dists,
         similarity
