@@ -176,11 +176,19 @@ def guided_random_diver_gene(
     seq_rand_diversify = gen_proteins.create_seqs(X=X_rand_diversify_samples)
     # get lengths for each mutant
     seq_lengths = [len(seq) <= 66 for seq in seq_rand_diversify]
+    
+    # add padded tokens to allow for same size length sequences
+    pad_ref_seq_list = [seq + (max_seq_len-len(seq)) * '-' for seq in ref_seq_list]
+    pad_rand_seq_list = [seq + (max_seq_len-len(seq)) * '-' for seq in seq_rand_diversify]
+    
+    #print(pad_ref_seq_list[0], pad_rand_seq_list[0])
+    
+    
 
     # hamming distance and similarity
     hamming_dists, similarity = util_tools.compute_hamming_dist(
-        seq1_list=ref_seq_list,
-        seq2_list=seq_rand_diversify
+        seq1_list=pad_ref_seq_list,
+        seq2_list=pad_rand_seq_list
     )
     
 
