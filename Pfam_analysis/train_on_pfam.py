@@ -443,11 +443,10 @@ def load_data(
         )
 
 
-def get_args():
+def get_args(parser):
 
 
-    # write output path name
-    parser = argparse.ArgumentParser()
+   
     parser.add_argument('--SEED', dest = 'SEED', default = 42, type = int, help = 'Flag: andom seed.')
     parser.add_argument('--homolog_option', dest = 'homolog_option', default = 0, type = int, help = 'Flag: choose which homolog protien task to work on.')
     parser.add_argument('--data_path', dest='data_path', default='.././data/protein_families/DHFR/pfam_DHFR.csv')
@@ -488,9 +487,6 @@ def get_args():
     parser.add_argument('--lambda_weight', dest='lambda_weight', default=10, type=float)
     parser.add_argument('--lr', dest='lr', default=1e-4, type=float)
 
-    args = parser.parse_args()
- 
-    return args
 
   
 def train_model(
@@ -649,8 +645,11 @@ def save_results(
 
 
 if __name__ == '__main__':
-
-    args = get_args()
+    
+    # get variable arguments
+    parser = argparse.ArgumentParser()
+    get_args(parser)
+    args = parser.parse_args()
   
     # reproducibility
     set_SEED(args=args)
