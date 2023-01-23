@@ -175,7 +175,11 @@ def load_data(
                                         batch_size = args.batch_size,
                                         num_workers = 4,
                                         shuffle = False
+                
                 )
+
+            else:
+                valid_dataloader = None
 
 
                 

@@ -308,15 +308,7 @@ class Decoder_re(nn.Module):
                         )
                 )
                 
-                # classification model
-                self.class_model_layers.append(
-                        TopModel_layer(
-                            in_width=self.z_dim,
-                            out_width=self.hidden_width,
-                            p=self.p
-                        )
-                )
-
+            
             else:
  
                 # regression model
@@ -328,21 +320,10 @@ class Decoder_re(nn.Module):
                         )
                 )
                 
-                # classification model
-                self.class_model_layers.append(
-                        TopModel_layer(
-                            in_width=self.hidden_width,
-                            out_width=self.hidden_width,
-                            p=self.p
-                        )
-                )
+        
 
-
-
-        self.output_class_layer = nn.Linear(self.hidden_width, self.num_classes)
         self.output_reg_layer = nn.Linear(self.hidden_width, 1)
 
-        self.sigmoid = nn.Sigmoid()
 
 
     def reg_forward(self, z: torch.FloatTensor) -> torch.FloatTensor:
@@ -352,27 +333,17 @@ class Decoder_re(nn.Module):
         return self.output_reg_layer(z)
 
 
-    def class_forward(self, z: torch.FloatTensor) -> torch.FloatTensor:
-
-        for layer in self.class_model_layers:
-            z = layer(z)
-        return self.sigmoid(self.output_class_layer(z))
-
-
     def forward(self, z: torch.FloatTensor) -> (
             torch.FloatTensor,
-            torch.FloatTensor
         ):
 
         reg_z = self.reg_forward(z)
-        class_z = self.class_forward(z)
 
-        return (
-                reg_z,
-                class_z
-        )
+        return reg_z
 
- # Create InfoVAE arhictecture using components from above:
+
+
+# Create InfoVAE arhictecture using components from above:
 
 class InfoVAE(nn.Module):
     """
@@ -726,12 +697,11 @@ class SS_InfoVAE(nn.Module):
         # p(x|z)
         logits_xrc = self.generator(x.permute(0,2, 1), z_upscale).permute(0,2,1)
         # p(y|z)
-        y_pred_R, y_pred_C = self.discriminator(z)
+        y_pred_R = self.discriminator(z)
 
         return (
                 logits_xrc,
                 y_pred_R,
-                y_pred_C,
                 z, 
                 z_mu,
                 z_var
@@ -783,8 +753,6 @@ class SS_InfoVAE(nn.Module):
             x: torch.FloatTensor,
             y_pred_R: torch.FloatTensor,
             y_true_R: torch.FloatTensor,
-            y_pred_C: torch.FloatTensor,
-            y_true_C: torch.FloatTensor,
             z_pred: torch.FloatTensor,
             true_samples: torch.FloatTensor,
             z_mu: torch.FloatTensor,
@@ -808,22 +776,15 @@ class SS_InfoVAE(nn.Module):
         loss_nll = torch.mean(loss_nll, dim = -1) # average nll along protein sequence
         loss_nll = torch.mean(loss_nll) # average over the batch
         # DISCRIMINATION loss:
-        
+       
         try:
-            # for classification loss
-            loss_pheno_BCE = nn.BCELoss()
-            loss_pheno_C = loss_pheno_BCE(y_pred_C, y_true_C)
-
             # for regression loss
             loss_pheno_MSE = nn.MSELoss()
-            loss_pheno_R = loss_pheno_MSE(y_pred_R, y_true_R)
-
-            loss_pheno = loss_pheno_R + loss_pheno_C
+            loss_pheno = loss_pheno_MSE(y_pred_R, y_true_R)
         
         except RuntimeErrors: # if the whole batch didn't have experimental true labels
             loss_pheno = torch.tensor([0]).to(self.DEVICE)
                    
- 
         return (
                 loss_nll,
                 loss_kld,

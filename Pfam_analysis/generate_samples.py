@@ -13,6 +13,7 @@ import source.model_components as model_comps
 import source.PL_wrapper as PL_mod
 import train_on_pfam as train_sess
 import utils.tools as util_tools
+import train_on_CM as CM_train_sess
 
 import numpy as np
 import pandas as pd
@@ -126,8 +127,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     train_sess.get_args(parser)
     sample_get_args(parser)
+    CM_train_sess.get_SS_args(parser)
     args = parser.parse_args()
-
+    args.alignment = False # only unalignments 
     os.makedirs(args.folder_path, exist_ok=True)
 
     # reprod.
@@ -140,10 +142,21 @@ if __name__ == '__main__':
     _, _, _, protein_len = train_sess.load_data(args=args)
 
     # call model
-    PL_model = train_sess.call_model(
+    if args.learning_option == 'semi-supervised':
+        PL_model = CM_train_sess.call_SS_model(
+                args=args,
+                protein_len=protein_len
+        )
+
+    elif args.learning_option == 'unsupervised':
+
+        PL_model = train_sess.call_model(
             args=args,
             protein_len=protein_len
-    )
+        )
+
+    else:
+        print('Only learning option is the Semi-supervised or unsupervised')
 
     # load weights
     model = load_weights(

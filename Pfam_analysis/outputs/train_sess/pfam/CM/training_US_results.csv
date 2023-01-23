@@ -1,0 +1,2 @@
+train_L,train_nll,train_kld,train_mmd,train_pheno,train_MSE,train_pearson,train_spearman,val_L,val_nll,val_kld,val_mmd,val_pheno,val_MSE,val_pearson,val_spearman
+1.723762035369873,1.6000806093215942,1.974765658378601,0.002506852149963379,,,,,1.9804009199142456,1.77264404296875,1.4717390537261963,0.013484418392181396,,,,
