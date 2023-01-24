@@ -56,7 +56,7 @@ export lr=1e-4
 # ==========================
 
 export folder_path='../.././outputs/prediction/pfam/CM'
-export samples_output_path='../.././outputs/prediction/pfam/CM/CM_sample_sequences_US.csv'
+export samples_output_path='../.././outputs/prediction/pfam/CM/CM_US_train_dataset_inference.csv'
 export weights_path=${model_output_path}
 
 # ========================
