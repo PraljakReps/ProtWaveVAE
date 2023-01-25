@@ -14,10 +14,10 @@ export data_path='../.././data/protein_families/CM/CM_natural_homologs.csv'
 export train_path='../.././data/protein_families/CM/CM_natural_homologs.csv'
 export test_path='../.././data/protein_families/CM/CM_synthetic_homologs.csv'
 export alignment=False
-export output_results_path='../.././outputs/train_sess/pfam/CM/training_SS_results.csv'
-export model_output_path='../.././outputs/train_sess/pfam/CM/CM_model.pth'
+export output_results_path='../.././outputs/train_sess/pfam/CM/training_US_results.csv'
+export model_output_path='../.././outputs/train_sess/pfam/CM/CM_US_model.pth'
 export dataset_split=0 # 1: train/valid | 0: train
-export dataset_option='train'
+export dataset_option='test'
 
 # model training variables
 export SEED=42
@@ -57,7 +57,7 @@ export lr=1e-4
 # ==========================
 
 export folder_path='../.././outputs/prediction/pfam/CM'
-export samples_output_path='../.././outputs/prediction/pfam/CM/CM_SS_train_dataset_inference.csv'
+export samples_output_path='../.././outputs/prediction/pfam/CM/CM_US_test_dataset_inference.csv'
 export weights_path=${model_output_path}
 
 # ========================
@@ -65,7 +65,7 @@ export weights_path=${model_output_path}
 # ========================
 
 # training variable for CM
-export learning_option='semi-supervised'
+export learning_option='unsupervised'
 export disc_num_layers=2
 export hidden_width=10
 export num_classes=1

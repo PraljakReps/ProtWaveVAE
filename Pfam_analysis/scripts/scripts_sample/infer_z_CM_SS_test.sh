@@ -17,7 +17,7 @@ export alignment=False
 export output_results_path='../.././outputs/train_sess/pfam/CM/training_SS_results.csv'
 export model_output_path='../.././outputs/train_sess/pfam/CM/CM_model.pth'
 export dataset_split=0 # 1: train/valid | 0: train
-export dataset_option='train'
+export dataset_option='test'
 
 # model training variables
 export SEED=42
@@ -57,7 +57,7 @@ export lr=1e-4
 # ==========================
 
 export folder_path='../.././outputs/prediction/pfam/CM'
-export samples_output_path='../.././outputs/prediction/pfam/CM/CM_SS_train_dataset_inference.csv'
+export samples_output_path='../.././outputs/prediction/pfam/CM/CM_SS_test_dataset_inference.csv'
 export weights_path=${model_output_path}
 
 # ========================
