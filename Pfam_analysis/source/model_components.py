@@ -623,6 +623,182 @@ class InfoVAE(nn.Module):
         
         return X_context
 
+
+    def create_uniform_tensor(
+            self,
+            args: any,
+            X: torch.FloatTensor,
+            option: str='random'
+        ) -> torch.FloatTensor:
+
+        batch_size, seq_length, aa_length = X.shape
+
+        X_temp = torch.ones_like(X)
+
+        if option == 'random':
+            
+
+            X_temp[:,:,-1] = X_temp[:,:,-1]*0 # give no prob to the padded tokens
+            X_temp[:,:,:-1] = X_temp[:,:,:-1] / (aa_length-1)
+
+        elif option == 'guided':
+
+            X[:,:,-1] = X[:,:,-1]*0 # remove padded tokens
+            X_temp = X_temp - X # removev the ground truth labels
+            X_temp[:,:,-1] = X_temp[:,:,-1]*0 # give no prob to the padded tokens
+            X_temp[:,:,:-1] = X_temp[:,:,:-1] / (aa_length-2)
+
+        return X_temp
+
+    @torch.no_grad()
+    def randomly_diversify(
+        self,
+        args: any,
+        X_context: torch.FloatTensor,
+        L: int=1,
+        option: str='categorical'
+        ) -> torch.FloatTensor:
+
+
+        # copy context sequence to track the conditioned amino acids
+        X_template = X_context.clone()
+
+        # eval mode (important, especially with BatchNorms)
+        self.eval()
+
+        # misc helper variables/objects
+        protein_len = X_context.shape[1] # length of the maximum sequence
+        n = X_context.shape[0] # number of sequences to generate
+
+        # init. placeholder tensors
+        X_temp = torch.zeros_like(X_context).to(args.DEVICE) # [B, L, 21]
+        X_context = torch.zeros_like(X_context).unsqueeze(1).repeat(1,
+                                                                       protein_len+1,
+                                                                       1,
+                                                                       1
+        ).to(args.DEVICE) # [B, L+1, L, 21]
+
+        # insert the conditioned amino acids
+        X_temp[:,:L,:] = X_template[:,:L,:]
+        X_context[:,:,:L,:] = X_template.unsqueeze(1).repeat(
+                                                            1,
+                                                            protein_len+1,
+                                                            1,
+                                                            1
+        )[:,:,:L,:]
+
+
+        for ii in tqdm(range(L, protein_len)):
+
+
+            # make logit predictions for the remaining positions
+            X_logits = self.create_uniform_tensor(
+                        args=args,
+                        X=X_template
+            )
+
+            # insert amino acid at the next position
+            X_temp[:,ii,:] = self.aa_sample(X_logits.softmax(dim=-1))[:,ii]
+            # update the next index of the conditional tensor
+            X_context[:,ii,:,:] = X_logits.softmax(dim=-1)
+            # update the context
+            X_context[:,ii,:ii,:] = X_temp[:,:ii,:]
+
+            # last index is the final latent-based AR prediction
+            X_context[:,-1,:,:] = X_temp
+
+        return X_context
+
+    def pick_pos2mut(self, list_pos: list) -> (
+            list,
+            int
+        ):
+
+        position = np.random.choice((list_pos))
+        list_pos.remove(position)
+
+        return (
+                list_pos,
+                position
+        )
+
+    @torch.no_grad()
+    def guided_randomly_diversify(
+            self,
+            args: any,
+            X_context: torch.FloatTensor,
+            X_design: torch.FloatTensor,
+            L: int=1,
+            min_leven_dists: list=[],
+            option: str='categorical',
+            design_seq_lens: list=[],
+            ref_seq_len: int=100,
+            num_gaps: int=0
+        ) -> torch.FloatTensor:
+
+        # copy context sequence to track the conditioned amino acids
+        X_template = X_context.clone()
+
+        # eval mode (important, especially with BatchNorms)
+        self.eval()
+
+        # misc helper variables/objects
+        protein_len = X_context.shape[1] # length of the max seq
+        n = X_context.shape[0] # number of sequences to generate
+
+        # init. placeholder tensors
+        X_temp = torch.zeros_like(X_context).to(args.DEVICE) # [B, L, 21]
+      
+        # insert the whole instead of only the conditional info
+        X_temp[:,:,:] = X_template[:,:,:]
+        X_context = X_template.unsqueeze(1).repeat(
+                1,
+                protein_len+1,
+                1,
+                1
+        )[:,:,:,:]
+        
+
+        # number of sites that fit along the length of the reference sequence
+        ref_window_size = (ref_seq_len - L)
+
+        for ii, min_leven_dist in enumerate(min_leven_dists): # how many times to mutate positions
+            
+            # positions that are allowed to be mutated
+            list_pos = [ii for ii in range(L, ref_seq_len)] # get mutating positions
+            
+            diff = 0 # no need to replace gaps with amino acids
+           
+            if int(min_leven_dist) > int(ref_window_size):
+                
+                diff = int(min_leven_dist) - len(list_pos)
+                # create new list position to account for longer sequence
+                list_pos = [ii for ii in range(L, ref_seq_len + diff)]
+
+            for jj in range(int(min_leven_dist)):
+
+                list_pos, pos_idx = self.pick_pos2mut(list_pos=list_pos)
+                # make logit predictions for the remaining positions
+                X_logits = self.create_uniform_tensor(
+                                    args=args,
+                                    X=X_template,
+                                    option='guided'
+                )
+
+                # insert amino acid at the next position
+                X_temp[ii,pos_idx,:] = self.aa_sample(X_logits)[ii,pos_idx]
+                # update the next index of the conditional tensor
+                X_context[ii,jj,pos_idx,:] = X_logits[ii,pos_idx]
+                # last index is the final sample
+                X_context[ii,-1,pos_idx,:] = X_temp[ii,pos_idx,:]
+          
+            # fill in gaps
+            X_context[ii,-1,-(num_gaps-diff):,:-1] = 0
+            X_context[ii,-1,-(num_gaps-diff):, -1] = 1
+                
+
+        print(f'Length start {L} and list positions:', list_pos)
+        return X_context
        
 
 # Create SS-InfoVAE arhictecture using components from above:
@@ -923,4 +1099,178 @@ class SS_InfoVAE(nn.Module):
         
         return X_context
 
+    def create_uniform_tensor(
+            self,
+            args: any,
+            X: torch.FloatTensor,
+            option: str='random'
+        ) -> torch.FloatTensor:
 
+        batch_size, seq_length, aa_length = X.shape
+
+        X_temp = torch.ones_like(X)
+
+        if option == 'random':
+            
+
+            X_temp[:,:,-1] = X_temp[:,:,-1]*0 # give no prob to the padded tokens
+            X_temp[:,:,:-1] = X_temp[:,:,:-1] / (aa_length-1)
+
+        elif option == 'guided':
+
+            X[:,:,-1] = X[:,:,-1]*0 # remove padded tokens
+            X_temp = X_temp - X # removev the ground truth labels
+            X_temp[:,:,-1] = X_temp[:,:,-1]*0 # give no prob to the padded tokens
+            X_temp[:,:,:-1] = X_temp[:,:,:-1] / (aa_length-2)
+
+        return X_temp
+
+    @torch.no_grad()
+    def randomly_diversify(
+        self,
+        args: any,
+        X_context: torch.FloatTensor,
+        L: int=1,
+        option: str='categorical'
+        ) -> torch.FloatTensor:
+
+
+        # copy context sequence to track the conditioned amino acids
+        X_template = X_context.clone()
+
+        # eval mode (important, especially with BatchNorms)
+        self.eval()
+
+        # misc helper variables/objects
+        protein_len = X_context.shape[1] # length of the maximum sequence
+        n = X_context.shape[0] # number of sequences to generate
+
+        # init. placeholder tensors
+        X_temp = torch.zeros_like(X_context).to(args.DEVICE) # [B, L, 21]
+        X_context = torch.zeros_like(X_context).unsqueeze(1).repeat(1,
+                                                                       protein_len+1,
+                                                                       1,
+                                                                       1
+        ).to(args.DEVICE) # [B, L+1, L, 21]
+
+        # insert the conditioned amino acids
+        X_temp[:,:L,:] = X_template[:,:L,:]
+        X_context[:,:,:L,:] = X_template.unsqueeze(1).repeat(
+                                                            1,
+                                                            protein_len+1,
+                                                            1,
+                                                            1
+        )[:,:,:L,:]
+
+
+        for ii in tqdm(range(L, protein_len)):
+
+
+            # make logit predictions for the remaining positions
+            X_logits = self.create_uniform_tensor(
+                        args=args,
+                        X=X_template
+            )
+
+            # insert amino acid at the next position
+            X_temp[:,ii,:] = self.aa_sample(X_logits.softmax(dim=-1))[:,ii]
+            # update the next index of the conditional tensor
+            X_context[:,ii,:,:] = X_logits.softmax(dim=-1)
+            # update the context
+            X_context[:,ii,:ii,:] = X_temp[:,:ii,:]
+
+            # last index is the final latent-based AR prediction
+            X_context[:,-1,:,:] = X_temp
+
+        return X_context
+
+    def pick_pos2mut(self, list_pos: list) -> (
+            list,
+            int
+        ):
+
+        position = np.random.choice((list_pos))
+        list_pos.remove(position)
+
+        return (
+                list_pos,
+                position
+        )
+
+    @torch.no_grad()
+    def guided_randomly_diversify(
+            self,
+            args: any,
+            X_context: torch.FloatTensor,
+            X_design: torch.FloatTensor,
+            L: int=1,
+            min_leven_dists: list=[],
+            option: str='categorical',
+            design_seq_lens: list=[],
+            ref_seq_len: int=100,
+            num_gaps: int=0
+        ) -> torch.FloatTensor:
+
+        # copy context sequence to track the conditioned amino acids
+        X_template = X_context.clone()
+
+        # eval mode (important, especially with BatchNorms)
+        self.eval()
+
+        # misc helper variables/objects
+        protein_len = X_context.shape[1] # length of the max seq
+        n = X_context.shape[0] # number of sequences to generate
+
+        # init. placeholder tensors
+        X_temp = torch.zeros_like(X_context).to(args.DEVICE) # [B, L, 21]
+      
+        # insert the whole instead of only the conditional info
+        X_temp[:,:,:] = X_template[:,:,:]
+        X_context = X_template.unsqueeze(1).repeat(
+                1,
+                protein_len+1,
+                1,
+                1
+        )[:,:,:,:]
+        
+
+        # number of sites that fit along the length of the reference sequence
+        ref_window_size = (ref_seq_len - L)
+
+        for ii, min_leven_dist in enumerate(min_leven_dists): # how many times to mutate positions
+            
+            # positions that are allowed to be mutated
+            list_pos = [ii for ii in range(L, ref_seq_len)] # get mutating positions
+            
+            diff = 0 # no need to replace gaps with amino acids
+           
+            if int(min_leven_dist) > int(ref_window_size):
+                
+                diff = int(min_leven_dist) - len(list_pos)
+                # create new list position to account for longer sequence
+                list_pos = [ii for ii in range(L, ref_seq_len + diff)]
+
+            for jj in range(int(min_leven_dist)):
+
+                list_pos, pos_idx = self.pick_pos2mut(list_pos=list_pos)
+                # make logit predictions for the remaining positions
+                X_logits = self.create_uniform_tensor(
+                                    args=args,
+                                    X=X_template,
+                                    option='guided'
+                )
+
+                # insert amino acid at the next position
+                X_temp[ii,pos_idx,:] = self.aa_sample(X_logits)[ii,pos_idx]
+                # update the next index of the conditional tensor
+                X_context[ii,jj,pos_idx,:] = X_logits[ii,pos_idx]
+                # last index is the final sample
+                X_context[ii,-1,pos_idx,:] = X_temp[ii,pos_idx,:]
+          
+            # fill in gaps
+            X_context[ii,-1,-(num_gaps-diff):,:-1] = 0
+            X_context[ii,-1,-(num_gaps-diff):, -1] = 1
+                
+
+        print(f'Length start {L} and list positions:', list_pos)
+        return X_context
