@@ -20,7 +20,7 @@ export protein='GB1'
 # model training variables
 export SEED=42
 export batch_size=512
-export epochs=1 # 500
+export epochs=500
 export lr=1e-4
 export DEVICE='cuda'
 export split_option=0

@@ -99,8 +99,6 @@ class Objective(object):
 
     def __call__(self, trial):
         # calculate an objective value by using the extra arguments ...
-
-              
               
         # encoder hyperparameters
         z_dim = trial.suggest_categorical('z_dim', self.z_dim)
@@ -455,7 +453,8 @@ def get_args() -> any:
 
 
 def set_GPU() -> None:
-
+    
+    print(f'Is cuda available: {torch.cuda.is_available()}')
 
     if torch.cuda.is_available():
         print('GPU available')
@@ -495,7 +494,7 @@ if __name__ == '__main__':
 
     # set seed for reproducibility
     set_SEED(args)
-
+    print("Start training..")
     CV_train(
             args=args,
     )

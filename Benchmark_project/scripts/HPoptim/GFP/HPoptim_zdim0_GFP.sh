@@ -11,8 +11,8 @@ export data_path='../../.././data/GFP/GFP_fluorescence.csv'
 export train_path='../../.././data/GFP/GFP_fluorescence_train.csv'
 export valid_path='../../.././data/GFP/GFP_fluorescence_valid.csv'
 export test_path='../../.././data/GFP/GFP_fluorescence_test.csv'
-export output_results_path='../../.././outputs/HPoptim/GFP/GFP_0'
-export output_model_path='../../.././outputs/HPoptim/GFP/final_model/GFP_zdim.pth'
+export output_results_path='../../.././outputs/HPoptim/GFP/GFP_zdim_0'
+export output_model_path='../../.././outputs/HPoptim/GFP/final_model/GFP_zdim_0.pth'
 export output_folder_path='../../.././outputs/HPoptim/GFP'
 export protein='GFP'
 
@@ -20,7 +20,7 @@ export protein='GFP'
 # model training variables
 export SEED=42
 export batch_size=256
-export epochs=300 # 300
+export epochs=300
 export lr=1e-4
 export DEVICE='cuda'
 export split_option=0
@@ -43,7 +43,7 @@ export hidden_width='10'
 export p='0.3'
 
 # decoder wavenet hyperparameters
-export wave_hidden_state='256'
+export wave_hidden_state='128'
 export head_hidden_state='128'
 export num_dil_rates='8'
 export dec_kernel_size='3'
