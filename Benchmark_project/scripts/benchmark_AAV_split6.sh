@@ -18,41 +18,41 @@ export protein='AAV'
 # model training variables
 export SEED=42
 export batch_size=256
-export epochs=1
+export epochs=2000
 export lr=1e-4
 export DEVICE='cuda'
 export split_option=6
 
 
 # general architecture variables
-export z_dim=17
+export z_dim=6
 export num_classes=1
 
 # encoder hyperparameters
 export encoder_rates=0
 export C_in=21
-export C_out=512
+export C_out=128
 export alpha=0.1 # might not be necessary (Only for leaky relu)
 export enc_kernel=3
-export num_fc=2
+export num_fc=3
 
 # top model (discriminative decoder) hyperparameters
-export disc_num_layers=2
-export hidden_width=10
-export p=0.1
+export disc_num_layers=1
+export hidden_width=50
+export p=0.3
 
 # decoder wavenet hyperparameters
 export wave_hidden_state=128
-export head_hidden_state=128
+export head_hidden_state=256
 export num_dil_rates=8
 export dec_kernel_size=3
 export aa_labels=21
 
 # loss prefactor
-export nll_weight=1.0
+export nll_weight=100.0
 export MI_weight=0.99
 export lambda_weight=10.0
-export gamma_weight=1.0
+export gamma_weight=10.0
 
 
 python ../train_SemiSupervised.py \

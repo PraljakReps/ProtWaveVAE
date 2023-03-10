@@ -11,21 +11,21 @@ export data_path='../../.././data/AAV/full_data.csv'
 export train_path='../../.././data/AAV/full_data.csv'
 export valid_path='../../.././data/AAV/full_data.csv'
 export test_path='../../.././data/AAV/full_data.csv'
-export output_results_path='../../.././outputs/HPoptim/AAV/HPoptim_zdim_1.csv'
-export output_model_path='../../.././outputs/HPoptim/AAV/HPoptim_zdim_1.csv'
+export output_results_path='../../.././outputs/HPoptim/AAV/HPoptim'
+export output_model_path='../../.././outputs/HPoptim/AAV/HPoptim'
 export output_folder_path='../../.././outputs/HPoptim/AAV'
 export protein='AAV'
 
 # model training variables
 export SEED=42
 export batch_size=256
-export epochs=1
+export epochs=500
 export lr=1e-4
 export DEVICE='cuda'
 export split_option=0
 
 # general architecture variables
-export z_dim='11,12,13,14,15,16,17,18,19,20'
+export z_dim='6'
 export num_classes=1
 
 # encoder hyperparameters
@@ -34,17 +34,17 @@ export C_in=21
 export C_out='128'
 export alpha=0.1 # might not be necessary (Only for leaky relu)
 export enc_kernel='3'
-export num_fc='2'
+export num_fc='3'
 
 # top model (discriminative decoder) hyperparameters
-export disc_num_layers='2'
+export disc_num_layers='1,2,3,4,5'
 export hidden_width='10'
 export p='0.1'
 
 # decoder wavenet hyperparameters
-export wave_hidden_state='128'
-export head_hidden_state='128'
-export num_dil_rates='8'
+export wave_hidden_state='64'
+export head_hidden_state='256'
+export num_dil_rates='6'
 export dec_kernel_size='3'
 export aa_labels=21
 
@@ -54,13 +54,13 @@ export MI_weight='0.95'
 export lambda_weight='2.0'
 export gamma_weight='1.0'
 
-export search_variable='z_dim'
-export n_trials=10
+export search_variable='disc_num_layers'
+export n_trials=5
 export K=1
 
 
 python ../../../HPoptim_benchmark_ProtWaveVAE.py \
-		--data_path ${data_path} \
+	--data_path ${data_path} \
         --train_path ${train_path} \
         --valid_path ${valid_path} \
         --test_path ${test_path} \

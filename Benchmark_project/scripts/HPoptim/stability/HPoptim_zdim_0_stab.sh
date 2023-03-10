@@ -20,7 +20,7 @@ export protein='stability'
 # model training variables
 export SEED=42
 export batch_size=256
-export epochs=300
+export epochs=1 # 300 
 export lr=1e-4
 export DEVICE='cuda'
 export split_option=0
@@ -40,7 +40,7 @@ export num_fc='1'
 # top model (discriminative decoder) hyperparameters
 export disc_num_layers='2'
 export hidden_width='10'
-export p='0.3'
+export p='0.1'
 
 # decoder wavenet hyperparameters
 export wave_hidden_state='128'

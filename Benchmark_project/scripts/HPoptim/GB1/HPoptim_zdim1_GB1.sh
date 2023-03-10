@@ -40,10 +40,10 @@ export num_fc='1'
 # top model (discriminative decoder) hyperparameters
 export disc_num_layers='2'
 export hidden_width='10'
-export p='0.3'
+export p='0.1'
 
 # decoder wavenet hyperparameters
-export wave_hidden_state='256'
+export wave_hidden_state='128'
 export head_hidden_state='128'
 export num_dil_rates='8'
 export dec_kernel_size='3'

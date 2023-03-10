@@ -19,13 +19,13 @@ export protein='AAV'
 # model training variables
 export SEED=42
 export batch_size=256
-export epochs=1
+export epochs=300
 export lr=1e-4
 export DEVICE='cuda'
 export split_option=0
 
 # general architecture variables
-export z_dim='1,2,3,4,5'
+export z_dim='1,2,3,4,5,6,7,8,9,10'
 export num_classes=1
 
 # encoder hyperparameters
@@ -55,7 +55,7 @@ export lambda_weight='2.0'
 export gamma_weight='1.0'
 
 export search_variable='z_dim'
-export n_trials=5
+export n_trials=10
 export K=1
 
 

@@ -25,7 +25,7 @@ export split_option=0
 
 
 # general architecture variables
-export z_dim=4
+export z_dim=3
 export num_classes=1
 
 # encoder hyperparameters
@@ -34,25 +34,25 @@ export C_in=21
 export C_out=128
 export alpha=0.1 # might not be necessary (Only for leaky relu)
 export enc_kernel=3
-export num_fc=2
+export num_fc=3
 
 # top model (discriminative decoder) hyperparameters
-export disc_num_layers=2
-export hidden_width=100
-export p=0.1
+export disc_num_layers=5
+export hidden_width=20
+export p=0.0
 
 # decoder wavenet hyperparameters
-export wave_hidden_state=128
-export head_hidden_state=128
-export num_dil_rates=8
+export wave_hidden_state=256
+export head_hidden_state=512
+export num_dil_rates=6
 export dec_kernel_size=3
 export aa_labels=21
 
 # loss prefactor
-export nll_weight=1.0
+export nll_weight=50.0
 export MI_weight=0.99
-export lambda_weight=2.0
-export gamma_weight=1.0
+export lambda_weight=10.0
+export gamma_weight=10.0
 
 
 python ../train_SemiSupervised.py \
