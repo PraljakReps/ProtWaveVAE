@@ -3,7 +3,7 @@
 
 ## Project Description
 
-This repository contains source code and scripts for reproducing the results of the paper titled "ProtWaveVAE: Integrating Autoregressive Sampling with Latent-based Inference for Data-driven Protein Design". The project is divided into three subfolders, each containing scripts and source code for reproducing specific tasks discussed in the paper:
+This repository contains source code and scripts for reproducing the results of the paper titled ["ProtWaveVAE: Integrating Autoregressive Sampling with Latent-based Inference for Data-driven Protein Design"](https://doi.org/10.1101/2023.04.23.537971). The project is divided into three subfolders, each containing scripts and source code for reproducing specific tasks discussed in the paper:
 
 1. `Benchmark_project`: Contains scripts and instructions for reproducing fitness and function benchmarking tasks from TAPE and FLIP using ProtWave-VAE.
 2. `Pfam_analysis`: Contains scripts and instructions for reproducing protein family latent inference studies, Chorismate mutase semi-supervised learning tasks, and C-terminus diversification with latent conditioning.
