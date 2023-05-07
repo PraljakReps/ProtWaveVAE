@@ -13,6 +13,7 @@ cd scripts/HPoptim
 
 2. (Optional) After finding the optimal hyperparameters for the SH3 design task, you can run a Cross-validation script to verify that the model doesn’t overfit the training set. Execute the following command:  
 ```
+cd scripts # Enter this subdirectory for the remaining shell scripts
 sh CV_SH3_ProtWaveVAE.sh
 ```
 Note: If you experience GPU memory allocation issues, lower the batch_size parameter in the shell script. This solution applies to the following scripts as well. 
