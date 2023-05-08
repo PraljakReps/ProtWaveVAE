@@ -1,6 +1,10 @@
 
 # ProtWaveVAE Repository
 
+## Model functions
+
+For the purpose of using the model architecture and corresponding functions, please use the following repository ["ProtWaveVAE Model functions"](https://github.com/PraljakReps/ProtWaveVAE_model) with tutorial code snippet included or use the following `pip install ProtWave-VAE` and follow the same tutorial code snippet. For reproducing the results of our recent paper titled ["ProtWaveVAE: Integrating Autoregressive Sampling with Latent-based Inference for Data-driven Protein Design"](https://doi.org/10.1101/2023.04.23.537971), please follow use this repository and follow instructions below.
+
 ## Project Description
 
 This repository contains source code and scripts for reproducing the results of the paper titled ["ProtWaveVAE: Integrating Autoregressive Sampling with Latent-based Inference for Data-driven Protein Design"](https://doi.org/10.1101/2023.04.23.537971). The project is divided into three subfolders, each containing scripts and source code for reproducing specific tasks discussed in the paper:
