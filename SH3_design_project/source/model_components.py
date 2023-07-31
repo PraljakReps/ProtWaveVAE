@@ -241,7 +241,7 @@ class GatedCNN_encoder(nn.Module):
   
         for ii in range(self.num_fc):
             h = self.encoder_fully_connected[ii](enc_out)
-            enc_output = self.lrelu(h)
+            enc_out = self.lrelu(h)
 
         mu = self.q_z_mean(enc_out) # mean for the latent embedding
         
