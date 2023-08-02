@@ -158,7 +158,7 @@ def prepare_GFP_datasets(
                 valid_pheno = torch.tensor(valid_df.log_fluorescence.values).reshape(-1, 1)
                 test_pheno = torch.tensor(test_df.log_fluorescence.values).reshape(-1, 1)
                 
-                max_seq_len = train_num.shape[0]
+                max_seq_len = train_num.shape[-1]
                 print('Max sequence length:', max_seq_len)
 
                 return (
@@ -382,7 +382,7 @@ def prepare_GB1_datasets(
     valid_pheno = torch.tensor([score for score in valid_df.Fitness.values]).reshape(-1, 1)
     test_pheno = torch.tensor([score for score in test_df.Fitness.values]).reshape(-1, 1)
 
-    max_seq_len = train_num.shape[0]
+    max_seq_len = train_num.shape[-1]
     print('Max sequence length:', max_seq_len)
 
     return (
